@@ -1,0 +1,125 @@
+<div id="vin-process-widget" class="vin-process-widget-container">
+    <div class="vp-container">
+
+        <div class="vp-steps-content">
+
+            <div class="vp-step is-active is-visible" id="vp-step-1" data-step="1" aria-live="polite" aria-atomic="true">
+                <div class="vp-step-header">
+                    <h3>Step 1: Enter Vehicle VIN</h3>
+                    <span class="vp-step-summary" id="vp-step-1-summary" style="display: none;" aria-label="Step 1 Summary"></span>
+                </div>
+                <div class="vp-step-content">
+                    <p>Please enter the 17-digit Vehicle Identification Number (VIN) below.</p>
+                    <div class="vp-form-group">
+                        <label for="vin-input">Vehicle Identification Number (VIN)</label>
+                        <input type="text" id="vin-input" class="vp-input" placeholder="Enter 17-digit VIN" maxlength="17" aria-required="true" aria-label="Vehicle Identification Number Input">
+                        </div>
+                    <div role="alert" class="vp-error-message" id="vp-step-1-error" aria-hidden="true"></div>
+                    <button id="vp-step-1-continue" class="vp-button">Continue</button>
+                </div>
+            </div>
+
+            <div class="vp-step" id="vp-step-2" data-step="2" aria-live="polite" aria-atomic="true">
+                <div class="vp-step-header">
+                    <h3>Step 2: Choose Your Service</h3>
+                    <span class="vp-step-summary" id="vp-step-2-summary" style="display: none;" aria-label="Step 2 Summary"></span>
+                </div>
+                <div class="vp-step-content">
+                    <p>Select the type of information you need for the entered VIN.</p>
+                    <fieldset class="vp-options-container" aria-labelledby="vp-step-2-title">
+                         <legend class="screen-reader-text" id="vp-step-2-title">Service Options</legend>
+                        <button class="vp-option-button" data-option="basic" aria-pressed="false">
+                            <i class="fas fa-info-circle" aria-hidden="true"></i>
+                            <h4>Basic Vehicle Specs</h4>
+                            <p>(Free)</p>
+                        </button>
+                        <button class="vp-option-button" data-option="full" aria-pressed="false">
+                            <i class="fas fa-file-invoice-dollar" aria-hidden="true"></i>
+                            <h4>Full History Report</h4>
+                            <p>(Paid Service)</p>
+                        </button>
+                        <button class="vp-option-button" data-option="retrieve" aria-pressed="false">
+                            <i class="fas fa-history" aria-hidden="true"></i>
+                            <h4>Retrieve Previous Report</h4>
+                            <p>(Free if purchased before)</p>
+                        </button>
+                    </fieldset>
+                     <div role="alert" class="vp-error-message" id="vp-step-2-error" aria-hidden="true"></div>
+                </div>
+            </div>
+
+            <div class="vp-step" id="vp-step-3" data-step="3" aria-live="polite" aria-atomic="true">
+                <div class="vp-step-header">
+                    <h3 id="vp-step-3-title">Step 3: Action & Results</h3>
+                     <span class="vp-step-summary" id="vp-step-3-summary" style="display: none;" aria-label="Step 3 Summary"></span>
+                </div>
+                <div class="vp-step-content">
+                    <div class="step-3-content basic-info-results" id="vp-step-3-basic-results" style="display: none;">
+                        <h5>Basic Vehicle Specifications</h5>
+                        <div class="vp-results-area" aria-label="Basic Vehicle Specification Results">
+                            <p><strong>Year:</strong> <span id="result-year">---</span></p>
+                            <p><strong>Make:</strong> <span id="result-make">---</span></p>
+                            <p><strong>Model:</strong> <span id="result-model">---</span></p>
+                            <p><strong>Engine:</strong> <span id="result-engine">---</span></p>
+                            </div>
+                         <p style="margin-top: 1rem; font-size: 0.9rem;">Need more details? Consider purchasing a full report.</p>
+                         <button class="vp-button" id="vp-restart-basic">Check Another VIN</button>
+                    </div>
+
+                    <div class="step-3-content full-report-payment" id="vp-step-3-full-payment" style="display: none;">
+                        <h5>Purchase Full History Report</h5>
+                        <p>Select your desired report package below and proceed to secure payment.</p>
+                        <div class="vp-form-group">
+                            <label for="plan-selection">Select Package:</label>
+                            <select id="plan-selection" class="vp-input" aria-label="Select Report Package">
+                                <option value="silver" data-price="34.99">Silver Report ($34.99)</option>
+                                <option value="gold" data-price="49.99">Gold Report ($49.99)</option>
+                                <option value="platinum" data-price="64.99">Platinum Report ($64.99)</option>
+                            </select>
+                        </div>
+                        <p>You will be redirected to PayPal for secure payment.</p>
+                         <div role="alert" class="vp-error-message" id="vp-step-3-payment-error" aria-hidden="true"></div>
+                        <button id="vp-proceed-payment" class="vp-button">Proceed to Payment</button>
+                         <button class="vp-button vp-button-secondary" id="vp-back-step2-payment">Back to Options</button> </div>
+
+                    <div class="step-3-content retrieve-report" id="vp-step-3-retrieve" style="display: none;">
+                        <h5>Retrieve Previous Report</h5>
+                        <p>To access your previously purchased report for this VIN, please enter the email address used during the original purchase.</p>
+                        <div class="vp-form-group">
+                            <label for="retrieve-email-input">Email Address</label>
+                            <input type="email" id="retrieve-email-input" class="vp-input" placeholder="Enter your email" aria-required="true" aria-label="Email Address for Report Retrieval">
+                        </div>
+                         <div role="alert" class="vp-error-message" id="vp-step-3-retrieve-error" aria-hidden="true"></div>
+                        <button id="vp-get-previous-report" class="vp-button">Verify & Get Report</button>
+                        <button class="vp-button vp-button-secondary" id="vp-back-step2-retrieve">Back to Options</button> </div>
+
+                     <div class="step-3-content final-confirmation vp-confirmation-area" id="vp-step-3-confirmation" style="display: none;">
+                         <i class="fas fa-check-circle" aria-hidden="true"></i>
+                         <h4 id="confirmation-title">Report Ready!</h4>
+                         <p id="confirmation-message">Your report has been generated successfully.</p>
+                         <a href="#" id="download-report-link" class="vp-button" download style="display: none;">Download Report (PDF)</a>
+                         <button class="vp-button" id="vp-restart-final">Check Another VIN</button>
+                     </div>
+
+                     <div role="alert" class="vp-error-message" id="vp-step-3-error" aria-hidden="true" style="display: none;"></div>
+
+                </div>
+            </div>
+
+        </div><div class="vp-progress-indicator" aria-label="Progress through VIN processing steps">
+            <div class="vp-progress-line" aria-hidden="true">
+                <div class="vp-progress-line-fill" id="vp-line-fill"></div>
+            </div>
+            <div class="vp-progress-step is-active" id="vp-progress-1" data-step="1">
+                <div class="vp-step-icon" aria-label="Step 1: Enter VIN - Active"><i class="fas fa-search"></i></div>
+                <div class="vp-step-label">Enter VIN</div>
+            </div>
+            <div class="vp-progress-step" id="vp-progress-2" data-step="2">
+                <div class="vp-step-icon" aria-label="Step 2: Select Service - Pending"><i class="fas fa-list-ul"></i></div>
+                <div class="vp-step-label">Select Service</div>
+            </div>
+            <div class="vp-progress-step" id="vp-progress-3" data-step="3">
+                <div class="vp-step-icon" aria-label="Step 3: Get Results - Pending"><i class="fas fa-file-alt"></i></div>
+                <div class="vp-step-label">Get Results</div>
+            </div>
+        </div></div></div>

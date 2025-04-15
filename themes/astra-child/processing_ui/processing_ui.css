@@ -1,0 +1,600 @@
+/* ==========================================================================
+   VIN Processor Widget Styles (Scoped within #vin-process-widget)
+   Version: 1.0
+   ========================================================================== */
+
+   :root {
+    /* Define colors based on user's theme */
+    --vp-primary-color: #0057ff;
+    --vp-primary-dark: #0046cc;
+    --vp-secondary-color: #111827; /* Dark gray */
+    --vp-text-color: #374151; /* Slightly lighter than secondary */
+    --vp-light-gray: #f3f4f6;
+    --vp-mid-gray: #6b7280;
+    --vp-border-color: #e5e7eb;
+    --vp-success-color: #10b981;
+    --vp-error-color: #ef4444; /* Red 500 */
+    --vp-error-dark: #dc2626; /* Red 600 */
+    --vp-error-bg-color: #fee2e2; /* Red 100 */
+    --vp-step-icon-pending-color: #d1d5db; /* Gray 300 */
+    --vp-step-icon-active-color: var(--vp-primary-color);
+    --vp-step-icon-complete-color: var(--vp-success-color);
+    --vp-line-pending-color: var(--vp-border-color);
+    --vp-line-complete-color: var(--vp-primary-color);
+    --vp-font-family: 'Poppins', sans-serif;
+    --vp-border-radius: 8px;
+    --vp-transition-speed: 0.4s;
+    --vp-transition-timing: ease-in-out;
+    --vp-focus-ring-color: rgba(0, 87, 255, 0.25);
+}
+
+/* Base Widget Container */
+#vin-process-widget {
+    font-family: var(--vp-font-family);
+    color: var(--vp-text-color);
+    background-color: #fff;
+    padding: clamp(1rem, 3vw, 2rem) clamp(0.5rem, 2vw, 1.5rem); /* Responsive padding */
+    max-width: 900px;
+    margin: 2rem auto;
+    border: 1px solid var(--vp-border-color);
+    border-radius: var(--vp-border-radius);
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.07);
+    overflow: hidden;
+}
+
+.vp-container {
+    display: flex;
+    flex-direction: row;
+    gap: clamp(1.5rem, 4vw, 3rem); /* Responsive gap */
+}
+
+/* Left Column - Steps Content */
+.vp-steps-content {
+    flex: 1 1 70%;
+    min-width: 0;
+}
+
+.vp-step {
+    background-color: #fff;
+    border: 1px solid var(--vp-border-color);
+    border-radius: var(--vp-border-radius);
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+    transition: max-height var(--vp-transition-speed) var(--vp-transition-timing),
+                opacity var(--vp-transition-speed) var(--vp-transition-timing),
+                margin-bottom var(--vp-transition-speed) var(--vp-transition-timing),
+                border-width var(--vp-transition-speed) var(--vp-transition-timing),
+                padding var(--vp-transition-speed) var(--vp-transition-timing);
+    max-height: 1000px; /* Start open */
+    opacity: 1;
+}
+
+/* Styles for hidden/inactive steps */
+.vp-step:not(.is-active):not(.is-visible) {
+   max-height: 0;
+   opacity: 0;
+   margin-bottom: 0;
+   border-width: 0;
+   padding-top: 0; /* Ensure padding transitions */
+   padding-bottom: 0;
+   overflow: hidden; /* Crucial for max-height */
+}
+
+.vp-step.is-complete .vp-step-header {
+   /* Optional: Subtle indication of completion */
+   /* border-left: 4px solid var(--vp-success-color); */
+}
+
+.vp-step-header {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--vp-border-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: linear-gradient(to right, #fff, #f9fafb); /* Subtle gradient */
+    transition: background-color var(--vp-transition-speed) ease;
+}
+.vp-step.is-active .vp-step-header {
+    background: linear-gradient(to right, #fff, rgba(0, 87, 255, 0.03)); /* Subtle active gradient */
+}
+
+
+.vp-step-header h3 {
+    margin: 0;
+    font-size: clamp(1rem, 2.5vw, 1.15rem); /* Responsive font size */
+    font-weight: 600;
+    color: var(--vp-secondary-color);
+}
+
+.vp-step-summary {
+    font-size: 0.9rem;
+    color: var(--vp-mid-gray);
+    margin-left: 1rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 150px; /* Limit summary width */
+}
+
+.vp-step-content {
+    padding: 1.5rem;
+    transition: padding var(--vp-transition-speed) var(--vp-transition-timing);
+}
+
+.vp-step:not(.is-active):not(.is-visible) .vp-step-content {
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+
+/* Right Column - Progress Indicator */
+.vp-progress-indicator {
+    flex: 0 0 auto;
+    width: 80px; /* Slightly wider for labels */
+    position: relative;
+    padding-top: calc(1rem + 5px); /* Align better with header text */
+}
+
+.vp-progress-line {
+    position: absolute;
+    /* Adjust top/bottom to precisely connect icon centers */
+    top: calc(1rem + 5px + 15px); /* Start below first icon center */
+    bottom: calc(1rem + 5px + 15px); /* End above last icon center */
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px;
+    background-color: var(--vp-line-pending-color);
+    border-radius: 2px;
+    z-index: 1;
+}
+
+.vp-progress-line-fill {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 0%; /* Animated by JS */
+    background-color: var(--vp-line-complete-color);
+    border-radius: 2px;
+    transition: height var(--vp-transition-speed) var(--vp-transition-timing);
+    z-index: 2;
+}
+
+.vp-progress-step {
+    position: relative;
+    z-index: 3;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 70px; /* Increased space */
+}
+.vp-progress-step:last-child { margin-bottom: 0; }
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(0, 87, 255, 0.4); }
+  70% { box-shadow: 0 0 0 8px rgba(0, 87, 255, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(0, 87, 255, 0); }
+}
+
+.vp-step-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background-color: #fff;
+    border: 3px solid var(--vp-step-icon-pending-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--vp-step-icon-pending-color);
+    transition: all var(--vp-transition-speed) ease-in-out;
+    font-size: 0.9rem;
+}
+
+.vp-progress-step.is-active .vp-step-icon {
+    border-color: var(--vp-step-icon-active-color);
+    color: var(--vp-step-icon-active-color);
+    transform: scale(1.15);
+    box-shadow: 0 0 0 4px rgba(0, 87, 255, 0.2); /* Add outer glow */
+    animation: pulse 1.5s infinite cubic-bezier(0.66, 0, 0, 1); /* Pulsing effect */
+}
+
+.vp-progress-step.is-complete .vp-step-icon {
+    border-color: var(--vp-step-icon-complete-color);
+    background-color: var(--vp-step-icon-complete-color);
+    color: #fff;
+    transform: scale(1);
+    animation: none; /* Stop pulsing */
+}
+
+.vp-step-label {
+    font-size: 0.8rem;
+    color: var(--vp-mid-gray);
+    margin-top: 0.6rem;
+    text-align: center;
+    font-weight: 500;
+    transition: color var(--vp-transition-speed) ease-in-out;
+}
+.vp-progress-step.is-active .vp-step-label,
+.vp-progress-step.is-complete .vp-step-label {
+    color: var(--vp-secondary-color);
+    font-weight: 600;
+}
+
+
+/* Form Elements Styling */
+.vp-form-group {
+    margin-bottom: 1.5rem;
+}
+
+.vp-form-group label {
+    display: block;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+    color: var(--vp-secondary-color);
+}
+
+.vp-input,
+#vin-process-widget select.vp-input { /* Target select specifically if needed */
+    display: block;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--vp-border-color);
+    border-radius: var(--vp-border-radius);
+    font-size: 1rem;
+    font-family: inherit;
+    color: var(--vp-text-color);
+    background-color: #fff;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    appearance: none; /* For select */
+}
+#vin-process-widget select.vp-input {
+     background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+     background-position: right 0.5rem center;
+     background-repeat: no-repeat;
+     background-size: 1.5em 1.5em;
+     padding-right: 2.5rem;
+}
+
+
+/* Focus visible for accessibility */
+.vp-input:focus-visible,
+#vin-process-widget select.vp-input:focus-visible,
+.vp-button:focus-visible,
+.vp-option-button:focus-visible {
+     outline: none;
+     border-color: var(--vp-primary-color);
+     box-shadow: 0 0 0 3px var(--vp-focus-ring-color);
+}
+/* Fallback for non-focus-visible browsers */
+.vp-input:focus,
+#vin-process-widget select.vp-input:focus {
+    outline: none;
+    border-color: var(--vp-primary-color);
+    box-shadow: 0 0 0 3px var(--vp-focus-ring-color);
+}
+
+
+.vp-button {
+    display: inline-block;
+    background-color: var(--vp-primary-color);
+    color: #fff;
+    padding: 0.75rem 1.5rem;
+    border: 1px solid transparent;
+    border-radius: var(--vp-border-radius);
+    font-size: 1rem;
+    font-weight: 500;
+    font-family: inherit;
+    cursor: pointer;
+    text-align: center;
+    transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
+    text-decoration: none;
+    margin-right: 0.5rem; /* Spacing between adjacent buttons */
+}
+.vp-button:last-child { margin-right: 0; }
+
+.vp-button:hover,
+.vp-button:focus { /* Combine hover and focus for consistency */
+    background-color: var(--vp-primary-dark);
+    color: #fff; /* Ensure text remains white */
+    outline: none;
+}
+.vp-button:active {
+    transform: translateY(1px);
+}
+
+.vp-button:disabled {
+    background-color: var(--vp-mid-gray);
+    border-color: var(--vp-mid-gray);
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+/* Secondary Button Style (e.g., for 'Back') */
+.vp-button.vp-button-secondary {
+    background-color: #fff;
+    color: var(--vp-mid-gray);
+    border-color: var(--vp-border-color);
+}
+.vp-button.vp-button-secondary:hover,
+.vp-button.vp-button-secondary:focus {
+    background-color: var(--vp-light-gray);
+    border-color: var(--vp-mid-gray);
+    color: var(--vp-secondary-color);
+}
+
+
+/* Option Buttons (Step 2) */
+.vp-options-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); /* Adjust minmax */
+    gap: 1rem;
+}
+
+.vp-option-button {
+    display: flex; /* Use flex for better alignment */
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 150px; /* Ensure consistent height */
+    padding: 1.5rem 1rem;
+    border: 2px solid var(--vp-border-color);
+    border-radius: var(--vp-border-radius);
+    background-color: #fff;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+}
+
+.vp-option-button:hover {
+    border-color: var(--vp-primary-color);
+    box-shadow: 0 4px 12px rgba(0, 87, 255, 0.1);
+    transform: translateY(-3px);
+}
+
+.vp-option-button.is-selected {
+    border-color: var(--vp-primary-color);
+    background-color: rgba(0, 87, 255, 0.05);
+    box-shadow: 0 0 0 2px var(--vp-primary-color) inset; /* Inner selection ring */
+}
+
+.vp-option-button i {
+    font-size: 2rem; /* Larger icon */
+    margin-bottom: 0.75rem;
+    color: var(--vp-primary-color);
+    transition: transform 0.2s ease;
+}
+.vp-option-button:hover i {
+    transform: scale(1.1);
+}
+
+.vp-option-button h4 {
+    margin: 0 0 0.25rem 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--vp-secondary-color);
+}
+
+.vp-option-button p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--vp-mid-gray);
+}
+.vp-option-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background-color: var(--vp-light-gray);
+    border-color: var(--vp-border-color);
+    box-shadow: none;
+    transform: none;
+}
+.vp-option-button:disabled:hover {
+     border-color: var(--vp-border-color); /* Prevent hover effect when disabled */
+}
+
+
+/* Error Message Styling */
+.vp-error-message {
+    display: none; /* Hidden by default */
+    padding: 0.75rem 1.25rem;
+    margin-top: 1rem;
+    border: 1px solid transparent;
+    border-left-width: 4px; /* Accent border */
+    border-left-color: var(--vp-error-dark);
+    background-color: var(--vp-error-bg-color);
+    color: var(--vp-error-dark); /* Darker red for text */
+    border-radius: var(--vp-border-radius);
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: opacity 0.3s ease;
+}
+.vp-error-message.is-visible {
+    display: block;
+    opacity: 1;
+}
+/* Add icon to error message */
+.vp-error-message::before {
+    content: "\f071"; /* Font Awesome exclamation-triangle */
+    font-family: "Font Awesome 5 Free";
+    font-weight: 900;
+    margin-right: 0.75rem;
+    font-size: 1.1em;
+}
+
+
+/* Results Display Styling */
+.vp-results-area {
+    background-color: var(--vp-light-gray);
+    padding: 1.5rem;
+    border-radius: var(--vp-border-radius);
+    margin-top: 1rem;
+    border: 1px solid var(--vp-border-color);
+}
+.vp-results-area h5 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+    font-weight: 600;
+    color: var(--vp-secondary-color);
+}
+.vp-results-area p {
+    margin-bottom: 0.75rem; /* Increased spacing */
+    font-size: 0.95rem;
+    line-height: 1.6;
+}
+.vp-results-area strong {
+    color: var(--vp-secondary-color);
+    font-weight: 600;
+    margin-right: 0.5rem;
+}
+
+/* Confirmation / Download Styling */
+.vp-confirmation-area {
+    text-align: center;
+    padding: 2rem 1rem;
+}
+.vp-confirmation-area .fas.fa-check-circle { /* More specific selector */
+    font-size: 3.5rem; /* Larger icon */
+    color: var(--vp-success-color);
+    margin-bottom: 1.5rem;
+}
+.vp-confirmation-area h4 {
+    font-size: 1.3rem; /* Larger heading */
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+}
+.vp-confirmation-area p {
+    color: var(--vp-mid-gray);
+    margin-bottom: 2rem; /* More space before button */
+    font-size: 1rem;
+}
+#download-report-link {
+    margin-right: 0.5rem; /* Space between buttons */
+}
+
+
+/* Responsive Styles */
+@media (max-width: 768px) {
+    #vin-process-widget {
+        padding: 1rem 0; /* Remove horizontal padding */
+        border: none;
+        box-shadow: none;
+        margin: 0;
+        max-width: 100%;
+    }
+
+    .vp-container {
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    /* Progress Indicator Mobile: Horizontal Bar */
+    .vp-progress-indicator {
+        order: -1; /* Move to top */
+        width: 100%;
+        display: flex;
+        justify-content: space-between; /* Space out icons */
+        padding: 0.5rem 1rem 1rem 1rem; /* Adjust padding */
+        border-bottom: 1px solid var(--vp-border-color);
+        margin-bottom: 1.5rem;
+        position: relative; /* For the line */
+        background-color: #fff; /* Ensure background */
+    }
+
+    /* Horizontal Line for Mobile */
+    .vp-progress-line {
+       display: block; /* Show line */
+       position: absolute;
+       top: calc(15px + 0.5rem); /* Align vertically with icon centers */
+       left: calc(14px + 1rem); /* Start after first icon half + padding */
+       right: calc(14px + 1rem); /* End before last icon half + padding */
+       height: 4px; /* Line thickness */
+       width: auto; /* Let left/right control width */
+       bottom: auto; /* Override vertical settings */
+       transform: translateY(-50%); /* Center vertically */
+       z-index: 1;
+    }
+    .vp-progress-line-fill {
+       display: block; /* Show fill */
+       position: absolute;
+       top: 0;
+       left: 0;
+       height: 100%; /* Full height of the line */
+       width: 0%; /* Animated by JS */
+       transition: width var(--vp-transition-speed) var(--vp-transition-timing); /* Animate width */
+       z-index: 2;
+    }
+
+    .vp-progress-step {
+        margin-bottom: 0;
+        flex: 1; /* Allow steps to take space */
+        position: relative; /* Needed for icon positioning over line */
+        z-index: 3;
+    }
+
+    .vp-step-icon {
+        width: 28px;
+        height: 28px;
+        font-size: 0.8rem;
+        border-width: 2px;
+        margin: 0 auto; /* Center icon */
+    }
+     .vp-step-label {
+        font-size: 0.65rem; /* Smaller label */
+        margin-top: 0.4rem;
+        white-space: nowrap; /* Prevent wrapping */
+    }
+     .vp-progress-step.is-active .vp-step-icon {
+        transform: scale(1.1); /* Keep slight scale */
+        animation: none; /* Disable pulse on mobile to save space/perf */
+         box-shadow: 0 0 0 3px rgba(0, 87, 255, 0.15);
+    }
+
+    .vp-steps-content {
+       padding: 0 1rem; /* Add padding to content area */
+    }
+
+    .vp-step-header, .vp-step-content {
+        padding: 1rem;
+    }
+    .vp-step-header h3 {
+        font-size: 1rem;
+    }
+    .vp-step-summary { max-width: 100px; } /* Adjust summary width */
+
+    .vp-options-container {
+       grid-template-columns: 1fr; /* Stack options on mobile */
+       gap: 0.75rem;
+    }
+    .vp-option-button { min-height: auto; padding: 1rem; }
+    .vp-option-button i { font-size: 1.5rem; margin-bottom: 0.5rem;}
+    .vp-option-button h4 { font-size: 0.95rem; }
+    .vp-option-button p { font-size: 0.8rem; }
+
+    /* Stack buttons if needed */
+    .vp-step-content .vp-button {
+        display: block; /* Stack buttons */
+        width: 100%;
+        margin-bottom: 0.75rem;
+        margin-right: 0;
+    }
+     .vp-step-content .vp-button:last-child { margin-bottom: 0; }
+
+}
+
+/* Utility class for screen readers */
+.screen-reader-text {
+	border: 0;
+	clip: rect(1px, 1px, 1px, 1px);
+	clip-path: inset(50%);
+	height: 1px;
+	margin: -1px;
+	overflow: hidden;
+	padding: 0;
+	position: absolute !important;
+	width: 1px;
+	word-wrap: normal !important;
+}
+
+

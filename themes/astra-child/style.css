@@ -1,0 +1,667 @@
+/*
+ Theme Name:   Astra Child Theme
+ Theme URI:    https://yourwebsite.com/themes/astra-child
+ Description:  A custom child theme built on top of the Astra theme. This theme introduces enhancements and overrides to the default Astra behavior to support business-specific functionalities. Key modifications include:
+ 
+ - Sticky Header with dynamic shadow on scroll
+ - Fully custom Footer layout with HTML/CSS injection
+ - JavaScript-based UI enhancements for dynamic interaction
+ - Integration with external VIN verification APIs
+ - Customized functions for real-time data processing and service-based results
+ - Hooks and handlers for service-oriented logic and REST API calls
+ - Styled Call-To-Action blocks and slogan sections
+ - Integrated payment workflow with frontend UI control and backend endpoints
+ - Performance tweaks and code separation for scalability and maintainability
+
+ Version:      1.0.0
+ Author:       Jahanzeb Ahmed (Data Scientist & AI Engineer)
+ Author URI:   https://jahanzebahmed.netlify.app
+ Template:     astra
+ License:      GNU General Public License v2 or later
+ License URI:  https://www.gnu.org/licenses/gpl-2.0.html
+ Tags:         custom-header, sticky-header, API-integration, payment, Astra-child, service-processing
+ Text Domain:  astra-child
+*/
+
+
+/* Below is Custom CSS code used for Child Theme...*/
+
+/* General Styles */
+:root {
+    --primary-color: #0057ff;
+    --primary-dark: #0046cc;
+    --secondary-color: #111827;
+    --accent-color: #ffc107;
+    --light-gray: #f3f4f6;
+    --mid-gray: #6b7280;
+    --dark-gray: #374151;
+    --success-color: #10b981;
+    --border-radius: 8px;
+    --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    --transition: all 0.3s ease;
+  }
+  
+  /* Footer Styles */
+  .vin-verify-footer-wrapper {
+    background: linear-gradient(to bottom, #fff, #f8fafc);
+    color: var(--dark-gray);
+    font-family: 'Poppins', sans-serif;
+    padding: 0;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .footer-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 3rem 1.5rem 1.5rem;
+  }
+  
+  /* Footer Info Section */
+  .footer-info {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .footer-logo {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    color: var(--secondary-color);
+  }
+  
+  .footer-logo-icon {
+    color: var(--primary-color);
+    margin-right: 0.5rem;
+    font-size: 1.25rem;
+  }
+  
+  .footer-logo span {
+    color: var(--primary-color);
+  }
+  
+  .footer-description {
+    font-size: 0.75rem;
+    line-height: 1.5;
+    margin-bottom: 1rem;
+    color: var(--dark-gray);
+  }
+  
+  /* Service Icons - UPDATED */
+  .service-icons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+    margin-bottom: 1rem; /* Added space below service icons */
+  }
+  
+  .service-icon {
+    background-color: rgba(0, 87, 255, 0.08);
+    color: var(--primary-color);
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem;
+    display: flex;
+    align-items: center;
+    font-size: 0.75rem;
+    font-weight: 500;
+    transition: var(--transition);
+    flex: 0 0 auto; /* Prevent stretching */
+  }
+  
+  .service-icon:hover {
+    background-color: rgba(0, 87, 255, 0.12);
+    transform: translateY(-2px);
+  }
+  
+  .service-icon i {
+    margin-right: 0.375rem;
+    font-size: 0.875rem;
+  }
+  
+  /* Trust Badge */
+  .trust-badge {
+    font-size: 0.75rem;
+    color: var(--primary-color);
+    margin-top: 0.5rem;
+    font-weight: 600;
+  }
+  
+  /* Footer Columns */
+  .footer-links h4,
+  .footer-contact h4,
+  .footer-newsletter h4,
+  .footer-policy h4 {  /* Added footer-policy */
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: var(--secondary-color);
+    position: relative;
+    padding-bottom: 0.5rem;
+  }
+  
+  .footer-links h4:after,
+  .footer-contact h4:after,
+  .footer-newsletter h4:after,
+  .footer-policy h4:after {  /* Added footer-policy */
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 2rem;
+    height: 2px;
+    background-color: var(--primary-color);
+    border-radius: 10px;
+  }
+  
+  /* Footer Links */
+  .footer-links ul,
+  .footer-contact ul,
+  .footer-policy ul {  /* Added footer-policy */
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  
+  .footer-links li,
+  .footer-policy li {  /* Added footer-policy */
+    margin-bottom: 0.5rem;
+  }
+  
+  .footer-links a,
+  .footer-policy a {  /* Added footer-policy */
+    color: var(--dark-gray);
+    text-decoration: none;
+    transition: var(--transition);
+    position: relative;
+    padding-left: 0;
+    display: inline-block;
+    font-size: 0.75rem;
+  }
+  
+  .footer-links a:before,
+  .footer-policy a:before {  /* Added footer-policy */
+    content: '›';
+    position: absolute;
+    left: -10px;
+    top: 0;
+    color: var(--primary-color);
+    opacity: 0;
+    transition: var(--transition);
+  }
+  
+  .footer-links a:hover,
+  .footer-policy a:hover {  /* Added footer-policy */
+    color: var(--primary-color);
+    padding-left: 15px;
+  }
+  
+  .footer-links a:hover:before,
+  .footer-policy a:hover:before {  /* Added footer-policy */
+    opacity: 1;
+    left: 0;
+  }
+  
+  /* Footer Contact */
+  .footer-contact ul li {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 0.75rem;
+    line-height: 1.4;
+    font-size: 0.75rem;
+  }
+  
+  .footer-contact ul li i {
+    color: var(--primary-color);
+    margin-right: 0.5rem;
+    margin-top: 0.125rem;
+    flex-shrink: 0;
+    font-size: 0.875rem;
+  }
+  
+  .footer-contact a {
+    color: var(--dark-gray);
+    text-decoration: none;
+    transition: var(--transition);
+  }
+  
+  .footer-contact a:hover {
+    color: var(--primary-color);
+  }
+  
+  /* Footer CTA */
+  .footer-cta {
+    display: inline-block;
+    margin-top: 1rem;
+    padding: 0.5rem 1rem;
+    background-color: var(--primary-color);
+    color: white;
+    text-decoration: none;
+    border-radius: var(--border-radius);
+    font-size: 0.75rem;
+    transition: var(--transition);
+  }
+  
+  .footer-cta:hover {
+    background-color: var(--primary-dark);
+    transform: translateY(-2px);
+  }
+  
+  /* Newsletter Form - UPDATED */
+  .footer-newsletter p {
+    font-size: 0.75rem;
+    margin-bottom: 0.75rem;
+    line-height: 1.5;
+  }
+  
+  .newsletter-form {
+    display: flex;
+    align-items: stretch; /* Changed from center to stretch */
+    margin-bottom: 0.5rem;
+    max-width: 100%;
+    border-radius: var(--border-radius);
+    overflow: hidden; /* Keep the child elements within the border radius */
+    border: 1px solid #e5e7eb;
+  }
+  
+  .newsletter-form input {
+    flex: 1;
+    padding: 0.75rem; /* Increased padding for better touch area */
+    border: none; /* Removed individual border */
+    outline: none;
+    font-family: inherit;
+    font-size: 0.75rem;
+    transition: var(--transition);
+    background-color: #fff;
+  }
+  
+  .newsletter-form input:focus {
+    box-shadow: 0 0 0 2px rgba(0, 87, 255, 0.1);
+  }
+  
+  .newsletter-form button {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 0.75rem 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition);
+    font-size: 0.75rem;
+    white-space: nowrap;
+  }
+  
+  .newsletter-form button:hover {
+    background-color: var(--primary-dark);
+  }
+  
+  .privacy-note {
+    font-size: 0.625rem;
+    color: var(--mid-gray);
+    margin-top: 0.5rem;
+  }
+  
+  .privacy-note a {
+    color: var(--primary-color);
+    text-decoration: none;
+  }
+  
+  .privacy-note a:hover {
+    text-decoration: underline;
+  }
+  
+  /* Footer Bottom */
+  .footer-bottom {
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
+    font-size: 0.75rem;
+  }
+  
+  .footer-social ul {
+    display: flex;
+    list-style: none;
+    padding: 0;
+    margin: 0 0 1rem 0;
+    gap: 0.75rem;
+  }
+  
+  .footer-social a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: rgba(0, 87, 255, 0.08);
+    color: var(--primary-color);
+    transition: var(--transition);
+    font-size: 0.875rem;
+  }
+  
+  .footer-social a:hover {
+    background-color: var(--primary-color);
+    color: white;
+    transform: translateY(-2px);
+  }
+  
+  .footer-copy {
+    text-align: center;
+    color: var(--mid-gray);
+    font-size: 0.75rem;
+  }
+  
+  .footer-copy a {
+    color: var(--primary-color);
+    text-decoration: none;
+  }
+  
+  .footer-copy a:hover {
+    text-decoration: underline;
+  }
+  
+  /* Social Proof Notification Styles (Unchanged) */
+  .social-proof-container {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    width: 320px;
+    z-index: 9999;
+    font-family: 'Poppins', sans-serif;
+  }
+  
+  .social-proof-notification {
+    display: flex;
+    align-items: center;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1), 0 4px 8px rgba(0, 0, 0, 0.06);
+    padding: 1rem;
+    margin-top: 32px;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.4s, transform 0.4s;
+    position: relative;
+    border-left: 4px solid var(--primary-color);
+  }
+  
+  .notification-close {
+    position: absolute;
+    right: 8px;
+    top: 8px;
+    background: transparent;
+    border: none;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--mid-gray);
+    padding: 0;
+    transition: var(--transition);
+  }
+  
+  .notification-close:hover {
+    background: var(--light-gray);
+    color: var(--secondary-color);
+  }
+  
+  .notification-icon {
+    background: var(--success-color);
+    color: white;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 12px;
+    flex-shrink: 0;
+  }
+  
+  .notification-content {
+    flex: 1;
+    padding-right: 20px;
+  }
+  
+  .notification-message {
+    margin: 0;
+    font-size: 0.875rem;
+    color: var(--secondary-color);
+    line-height: 1.5;
+  }
+  
+  .notification-time {
+    margin: 4px 0 0;
+    font-size: 0.75rem;
+    color: var(--mid-gray);
+  }
+  
+  .customer-name {
+    font-weight: 600;
+    color: var(--secondary-color);
+  }
+  
+  .customer-location {
+    color: var(--dark-gray);
+  }
+  
+  .product-name {
+    font-weight: 600;
+    color: var(--primary-color);
+  }
+  
+  /* Policy links section - NEW */
+  .footer-policy {
+    order: 2; /* Changes display order in mobile view */
+  }
+  
+  .footer-policy ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1rem;
+  }
+  
+  .footer-policy li {
+    margin-bottom: 0.25rem;
+    font-size: 0.75rem;
+  }
+  
+  /* Responsive Styles - UPDATED */
+  @media (max-width: 991px) {
+    .footer-container {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.5rem 1rem;
+    }
+    
+    /* Move policy links to bottom on tablet */
+    .footer-container {
+      display: grid;
+      grid-template-areas: 
+        "info links"
+        "contact newsletter"
+        "policy policy";
+    }
+    
+    .footer-info { grid-area: info; }
+    .footer-links { grid-area: links; }
+    .footer-contact { grid-area: contact; }
+    .footer-newsletter { grid-area: newsletter; }
+    .footer-policy { 
+      grid-area: policy;
+      margin-top: 1rem;
+    }
+  }
+  
+  @media (max-width: 767px) {
+    .footer-container {
+      grid-template-columns: 1fr;
+      grid-template-areas: 
+        "info"
+        "links"
+        "contact"
+        "newsletter"
+        "policy";
+      text-align: center;
+    }
+    
+    .service-icons {
+      justify-content: center;
+    }
+    
+    .footer-links h4:after,
+    .footer-contact h4:after,
+    .footer-newsletter h4:after,
+    .footer-policy h4:after {
+      left: 50%;
+      transform: translateX(-50%);
+    }
+    
+    .footer-links a:before,
+    .footer-policy a:before {
+      display: none;
+    }
+    
+    .footer-links a:hover,
+    .footer-policy a:hover {
+      padding-left: 0;
+    }
+    
+    .footer-contact ul li {
+      justify-content: center;
+    }
+    
+    .newsletter-form {
+      max-width: 100%;
+      margin: 0 auto 0.5rem;
+    }
+    
+    .footer-policy ul {
+      justify-content: center;
+    }
+    
+    .social-proof-container {
+      left: 10px;
+      right: 10px;
+      bottom: 10px;
+      width: calc(100% - 20px);
+      max-width: 400px;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .service-icons {
+      flex-direction: row; /* Keep row direction for small screens */
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+    
+    .service-icon {
+      width: auto; /* Let width be determined by content */
+      justify-content: center;
+    }
+    
+    /* Make newsletter form stack on very small screens */
+    .newsletter-form {
+      flex-direction: column;
+      border: none;
+    }
+    
+    .newsletter-form input {
+      border: 1px solid #e5e7eb;
+      border-radius: var(--border-radius);
+      margin-bottom: 0.5rem;
+    }
+    
+    .newsletter-form button {
+      border-radius: var(--border-radius);
+      width: 100%;
+    }
+  }
+
+ 
+/* ==========================================================================
+   Sticky Header Code - Child Theme Override
+   ========================================================================== */
+
+
+/* 1. Make the header sticky */
+#masthead.site-header {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 1000;
+    background-color: #fff;
+    transition: border-bottom 0.3s ease, box-shadow 0.3s ease;
+    border-bottom: 1px solid transparent;
+    margin-top: 0 !important; /* Override any negative margin */
+    transform: none !important; /* Override any transform */
+}
+
+/* 2. Add space to the top of the body */
+body {
+    padding-top: 71px; /* Matches the header height of 71px */
+}
+
+/* 3. Style for the header WHEN SCROLLED */
+#masthead.site-header.header-scrolled {
+    border-bottom: 1px solid #e0e0e0;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+}
+
+/* Remove margin-top from the first content element */
+.site-content > :first-child {
+    margin-top: 0 !important;
+}
+
+
+/* ==========================================================================
+   Force Header Menu Font Styles - Child Theme Override
+   ========================================================================== */
+
+/**
+ * Apply consistent font styles to the primary desktop header menu links.
+ * Uses !important to override potential conflicts from Elementor or parent theme.
+ */
+#masthead .ast-builder-menu-1 .menu-link {
+  /* Set your desired font family (ensure it's loaded/enqueued) */
+  font-family: 'Poppins', sans-serif !important; 
+  
+  /* Set your desired font size */
+  font-size: 16px !important; /* <<< CHANGE 16px TO YOUR DESIRED SIZE */
+
+  /* Optional: Set specific font weight */
+  /* font-weight: 500 !important; */ 
+
+  /* Optional: Set specific text color */
+  /* color: #333333 !important; */
+
+  /* Optional: Ensure consistent text transform (e.g., none, uppercase) */
+  /* text-transform: none !important; */
+}
+
+/**
+* Optional: Apply styles specifically when the header is scrolled/sticky.
+* Uncomment and adjust if you want different styles for the sticky state.
+*/
+
+/* #masthead.header-scrolled .ast-builder-menu-1 .menu-link {
+/*   font-size: 15px !important; /* Example: Slightly smaller when scrolled */
+/*   color: #555555 !important; */ /* Example: Different color when scrolled */
+
+
+/* ========================================================================== */

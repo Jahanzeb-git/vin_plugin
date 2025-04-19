@@ -233,3 +233,4 @@ function my_vin_get_images( $vin ) {
 }
 
 ?>
+

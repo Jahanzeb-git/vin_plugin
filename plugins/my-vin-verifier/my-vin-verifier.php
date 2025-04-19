@@ -4,8 +4,8 @@
  * Plugin URI:        https://example.com/plugins/my-vin-verifier/
  * Description:       Provides VIN verification services using the VinAudit API, custom UI shortcode integration, PayPal payments, and PDF report generation.
  * Version:           1.1.0
- * Author:            Your Name or Company
- * Author URI:        https://example.com/
+ * Author:            Jahanzeb Ahmed ()
+ * Author URI:        https://jahanzebahmed.mail@gmail.com
  * License:           GPL v2 or later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:       my-vin-verifier
@@ -35,6 +35,10 @@ if ( ! defined( 'MY_VIN_PAYPAL_WEBHOOK_ID_LIVE_OPTION' ) ) define( 'MY_VIN_PAYPA
 if ( ! defined( 'MY_VIN_REPORTS_TABLE' ) ) define( 'MY_VIN_REPORTS_TABLE', 'vin_reports' );
 if ( ! defined( 'MY_VIN_PDF_STORAGE_DIR' ) ) define( 'MY_VIN_PDF_STORAGE_DIR', 'vin_reports' );
 if ( ! defined( 'MY_VIN_AJAX_NONCE_ACTION' ) ) define( 'MY_VIN_AJAX_NONCE_ACTION', 'my_vin_ajax_nonce' );
+// Add this line after the existing webhook ID constant definitions
+if ( ! defined( 'MY_VIN_PAYPAL_SANDBOX_WEBHOOK_ID_OPTION' ) ) define( 'MY_VIN_PAYPAL_SANDBOX_WEBHOOK_ID_OPTION', 'my_vin_paypal_webhook_id_sandbox' );
+if ( ! defined( 'MY_VIN_PAYPAL_WEBHOOK_ID_LIVE_OPTION' ) ) define( 'MY_VIN_PAYPAL_WEBHOOK_ID_LIVE_OPTION', 'my_vin_paypal_webhook_id_live' );
+if ( ! defined( 'MY_VIN_PAYPAL_LIVE_WEBHOOK_ID_OPTION' ) ) define( 'MY_VIN_PAYPAL_LIVE_WEBHOOK_ID_OPTION', 'my_vin_paypal_webhook_id_live' );
 
 // --- Composer Autoloader ---
 if ( file_exists( MY_VIN_PLUGIN_PATH . 'vendor/autoload.php' ) ) {
@@ -71,20 +75,20 @@ register_deactivation_hook( __FILE__, 'my_vin_deactivate_plugin' );
  * Plugin Activation Hook Implementation.
  */
 function my_vin_activate_plugin() {
-    my_vin_create_reports_table(); // Create DB table
-
-    // Set default options
-    add_option( MY_VIN_API_KEY_OPTION, 'VA_DEMO_KEY' );
-    add_option( MY_VIN_PAYPAL_MODE_OPTION, 'sandbox' );
-    add_option( MY_VIN_PAYPAL_SANDBOX_CLIENT_ID_OPTION, '' );
-    add_option( MY_VIN_PAYPAL_SANDBOX_SECRET_OPTION, '' );
-    add_option( MY_VIN_PAYPAL_LIVE_CLIENT_ID_OPTION, '' );
-    add_option( MY_VIN_PAYPAL_LIVE_SECRET_OPTION, '' );
-    add_option( MY_VIN_PAYPAL_WEBHOOK_ID_SANDBOX_OPTION, '' );
-    add_option( MY_VIN_PAYPAL_WEBHOOK_ID_LIVE_OPTION, '' );
-
-    my_vin_ensure_reports_directory_exists(); // Ensure storage dir exists
-    flush_rewrite_rules(); // Flush rules after activation
+    my_vin_create_reports_table();
+    $defaults = [
+        'my_vin_verifier_api_key' => 'VA_DEMO_KEY',
+        'my_vin_paypal_mode' => 'sandbox',
+        'my_vin_paypal_client_id_sandbox' => '',
+        'my_vin_paypal_secret_sandbox' => '',
+        'my_vin_paypal_webhook_id_sandbox' => '',
+        'my_vin_paypal_client_id_live' => '',
+        'my_vin_paypal_secret_live' => '',
+        'my_vin_paypal_webhook_id_live' => '',
+    ];
+    update_option('my_vin_verifier_settings', $defaults);
+    my_vin_ensure_reports_directory_exists();
+    flush_rewrite_rules();
 }
 
 /**
@@ -123,35 +127,26 @@ add_action( 'plugins_loaded', 'my_vin_init_plugin' );
  * Handles PayPal SDK and localization for the processing UI JS.
  */
 function my_vin_enqueue_plugin_scripts() {
-    // Only load on pages with the shortcode
     if ( my_vin_is_processing_page_active() ) {
-
-        // Get PayPal Client ID based on mode
-        $paypal_mode = my_vin_get_setting( 'paypal_mode', 'sandbox' );
+        $paypal_mode = my_vin_get_setting( MY_VIN_PAYPAL_MODE_OPTION, 'sandbox' );
         $client_id_option = ($paypal_mode === 'live') ? MY_VIN_PAYPAL_LIVE_CLIENT_ID_OPTION : MY_VIN_PAYPAL_SANDBOX_CLIENT_ID_OPTION;
         $client_id = my_vin_get_setting( $client_id_option );
-
-        $processing_ui_script_handle = 'processing-ui-script'; // Handle used by theme's enqueue function
-
-        // Check if credentials are set before enqueueing PayPal SDK and localizing
+        $processing_ui_script_handle = 'processing-ui-script';
         if ( ! empty( $client_id ) ) {
-            // Enqueue PayPal JS SDK
             wp_enqueue_script(
                 'paypal-sdk',
-                'https://www.paypal.com/sdk/js?client-id=' . esc_attr( $client_id ) . '&currency=USD&intent=capture&commit=true', // Use commit=true for clearer UX
+                'https://www.paypal.com/sdk/js?client-id=' . esc_attr( $client_id ) . '&currency=USD&intent=capture&commit=true', // Fix 'currency' parameter
                 array(),
                 null,
                 true
             );
-
-            // Localize data only if the target script is already enqueued (by the theme)
             if ( wp_script_is( $processing_ui_script_handle, 'enqueued' ) ) {
                 wp_localize_script( $processing_ui_script_handle, 'processingUiData', array(
                     'ajax_url' => admin_url( 'admin-ajax.php' ),
                     'nonce'    => wp_create_nonce( MY_VIN_AJAX_NONCE_ACTION ),
-                    'paypal_client_id' => $client_id, // Pass Client ID to JS
+                    'paypal_client_id' => $client_id,
                     'paypal_mode' => $paypal_mode,
-                    'error_messages' => [ // Default error messages
+                    'error_messages' => [
                         'generic' => __('An unexpected error occurred. Please try again.', 'my-vin-verifier'),
                         'vin_invalid' => __('Please enter a valid 17-digit VIN.', 'my-vin-verifier'),
                         'api_error' => __('Could not retrieve vehicle data at this time.', 'my-vin-verifier'),
@@ -163,34 +158,30 @@ function my_vin_enqueue_plugin_scripts() {
                     ]
                 ));
             } else {
-                 // Log warning or admin notice: Theme script handle not found for localization
-                  if ( current_user_can('manage_options') && is_admin() ) { // Only show notice in admin
-                     add_action('admin_notices', function() use ($processing_ui_script_handle) {
-                         echo '<div class="notice notice-warning is-dismissible"><p>';
-                         echo sprintf(
-                             esc_html__( 'My VIN Verifier: Could not localize data for front-end script (handle "%s" not found). Ensure the theme enqueues the UI script correctly before this plugin\'s script hook (priority 30).', 'my-vin-verifier' ),
-                             esc_html($processing_ui_script_handle)
-                         );
-                         echo '</p></div>';
-                     });
-                 }
-                 error_log('My VIN Verifier Error: Cannot localize data because script handle "' . $processing_ui_script_handle . '" was not found.');
+                if ( current_user_can('manage_options') && is_admin() ) {
+                    add_action('admin_notices', function() use ($processing_ui_script_handle) {
+                        echo '<div class="notice notice-warning is-dismissible"><p>';
+                        echo sprintf(
+                            esc_html__( 'My VIN Verifier: Could not localize data for front-end script (handle "%s" not found). Ensure the theme enqueues the UI script correctly before this plugin\'s script hook (priority 30).', 'my-vin-verifier' ),
+                            esc_html($processing_ui_script_handle)
+                        );
+                        echo '</p></div>';
+                    });
+                }
+                error_log('My VIN Verifier Error: Cannot localize data because script handle "' . $processing_ui_script_handle . '" was not found.');
             }
-
         } else {
-            // Show admin notice if PayPal Client ID is not configured
             if ( current_user_can('manage_options') && is_admin() ) {
-                 add_action('admin_notices', function() use ($paypal_mode) {
-                     echo '<div class="notice notice-warning is-dismissible"><p>';
-                     echo sprintf(
-                         esc_html__( 'My VIN Verifier: PayPal Client ID for %s mode is not configured in settings. Payment processing will not work.', 'my-vin-verifier' ),
-                         esc_html( $paypal_mode )
-                     );
-                      echo ' <a href="' . esc_url( admin_url( 'options-general.php?page=my-vin-verifier-settings' ) ) . '">' . esc_html__('Configure Settings', 'my-vin-verifier') . '</a>';
-                     echo '</p></div>';
-                 });
+                add_action('admin_notices', function() use ($paypal_mode) {
+                    echo '<div class="notice notice-warning is-dismissible"><p>';
+                    echo sprintf(
+                        esc_html__( 'My VIN Verifier: PayPal Client ID for %s mode is not configured in settings. Payment processing will not work.', 'my-vin-verifier' ),
+                        esc_html( $paypal_mode )
+                    );
+                    echo ' <a href="' . esc_url( admin_url( 'options-general.php?page=my-vin-verifier-settings' ) ) . '">' . esc_html__('Configure Settings', 'my-vin-verifier') . '</a>';
+                    echo '</p></div>';
+                });
             }
-             // Optionally disable payment features on front-end if keys missing?
         }
     }
 }
@@ -223,4 +214,6 @@ function my_vin_is_processing_page_active() {
 }
 
 ?>
+
+
 

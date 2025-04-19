@@ -61,6 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Step 1 Elements
     const step1 = widget.querySelector('#vp-step-1');
     const vinInput = widget.querySelector('#vin-input');
+    const userEmailInput = widget.querySelector('#user-email-input');
     const step1ContinueBtn = widget.querySelector('#vp-step-1-continue');
     const step1Error = widget.querySelector('#vp-step-1-error');
     const step1Summary = widget.querySelector('#vp-step-1-summary');
@@ -70,6 +71,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const optionButtons = widget.querySelectorAll('.vp-option-button');
     const step2Error = widget.querySelector('#vp-step-2-error');
     const step2Summary = widget.querySelector('#vp-step-2-summary');
+    const vinDisplayValue = widget.querySelector('#vp-vin-display-value');
+    const changeVinBtn = widget.querySelector('#vp-change-vin-btn');
 
     // Step 3 Elements
     const step3 = widget.querySelector('#vp-step-3');
@@ -82,6 +85,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const step3FullPayment = widget.querySelector('#vp-step-3-full-payment');
     const step3Retrieve = widget.querySelector('#vp-step-3-retrieve');
     const step3Confirmation = widget.querySelector('#vp-step-3-confirmation');
+    
+    // Payment section elements
+    const vinDisplayValuePayment = widget.querySelector('#vp-vin-display-value-payment');
+    const changeVinBtnPayment = widget.querySelector('#vp-change-vin-btn-payment');
+    const packageCards = widget.querySelectorAll('.vp-package-card');
+    const packageButtons = widget.querySelectorAll('.vp-select-package-btn');
+    const selectedPackageSummary = widget.querySelector('.vp-selected-package-summary');
+    const selectedPackageName = widget.querySelector('#vp-selected-package-name');
+    const selectedPackagePrice = widget.querySelector('#vp-selected-package-price');
+    
+    // Retrieve section elements
+    const vinDisplayValueRetrieve = widget.querySelector('#vp-vin-display-value-retrieve');
+    const changeVinBtnRetrieve = widget.querySelector('#vp-change-vin-btn-retrieve');
+    
     // Ensure the PayPal button container exists in the HTML for Step 3 Full Payment variant
     const paypalButtonContainer = widget.querySelector('#paypal-button-container') || (() => {
         // Create if missing (though it should be in the HTML)
@@ -91,9 +108,8 @@ document.addEventListener('DOMContentLoaded', () => {
         return container;
     })();
 
-
     // Step 3 Action Elements
-    const planSelection = widget.querySelector('#plan-selection');
+    const proceedPaymentBtn = widget.querySelector('#vp-proceed-payment');
     const retrieveEmailInput = widget.querySelector('#retrieve-email-input');
     const getPreviousReportBtn = widget.querySelector('#vp-get-previous-report');
     const downloadReportLink = widget.querySelector('#download-report-link');
@@ -105,10 +121,19 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentStep = 1;
     const totalSteps = steps.length;
     let selectedVin = '';
+    let userEmail = '';
     let selectedPlan = null;
     let selectedOption = null;
+    let selectedPackage = null;
     let currentPaypalOrderId = null;
     let isProcessing = false; // Prevent double submissions/clicks
+    
+    // Package prices
+    const packagePrices = {
+        'silver': 34.99,
+        'gold': 49.99,
+        'platinum': 64.99
+    };
 
     // --- Utility Functions ---
 
@@ -348,6 +373,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isProcessing) return;
         clearError(1);
         selectedVin = vinInput.value.trim().toUpperCase();
+        userEmail = userEmailInput ? userEmailInput.value.trim() : '';
 
         if (!selectedVin || selectedVin.length !== 17 || !/^[A-HJ-NPR-Z0-9]{17}$/.test(selectedVin)) {
              showError(1, errorMessages.vin_invalid); vinInput.focus(); return;
@@ -355,7 +381,25 @@ document.addEventListener('DOMContentLoaded', () => {
         isProcessing = true; step1ContinueBtn.disabled = true; step1ContinueBtn.textContent = 'Validating...';
         try {
             await makeAjaxRequest('validate_vin_backend', { vin: selectedVin });
-            step1Summary.textContent = `VIN: ${selectedVin}`; step1Summary.style.display = 'inline'; vinInput.disabled = true;
+            
+            // Update UI for completion
+            step1Summary.textContent = `VIN: ${selectedVin}`; 
+            step1Summary.style.display = 'inline'; 
+            vinInput.disabled = true;
+            if (userEmailInput) userEmailInput.disabled = true;
+            
+            // Update VIN display in Step 2
+            if (vinDisplayValue) vinDisplayValue.textContent = selectedVin;
+            
+            // Update VIN display in Step 3 sections
+            if (vinDisplayValuePayment) vinDisplayValuePayment.textContent = selectedVin;
+            if (vinDisplayValueRetrieve) vinDisplayValueRetrieve.textContent = selectedVin;
+            
+            // If user provided email, pre-fill the retrieve email field
+            if (userEmail && retrieveEmailInput) {
+                retrieveEmailInput.value = userEmail;
+            }
+            
             advanceToStep(2);
         } catch (error) {
             showError(1, error.message); step1ContinueBtn.disabled = false; step1ContinueBtn.textContent = 'Continue';
@@ -460,13 +504,88 @@ document.addEventListener('DOMContentLoaded', () => {
          });
      }
 
+    /** Handle package selection */
+    function handlePackageSelection(packageType) {
+        if (isProcessing) return;
+        
+        // Update selected package
+        selectedPackage = packageType;
+        
+        // Update UI
+        packageCards.forEach(card => {
+            if (card.dataset.package === packageType) {
+                card.classList.add('selected');
+            } else {
+                card.classList.remove('selected');
+            }
+        });
+        
+        // Show summary
+        if (selectedPackageSummary) {
+            selectedPackageSummary.style.display = 'block';
+            
+            if (selectedPackageName) {
+                selectedPackageName.textContent = packageType.charAt(0).toUpperCase() + packageType.slice(1);
+            }
+            
+            if (selectedPackagePrice) {
+                selectedPackagePrice.textContent = `$${packagePrices[packageType].toFixed(2)}`;
+            }
+        }
+        
+        // Enable proceed button
+        if (proceedPaymentBtn) {
+            proceedPaymentBtn.disabled = false;
+        }
+    }
+    
+    /** Handle change VIN button click */
+    function handleChangeVin() {
+        if (isProcessing) return;
+        returnToStep(1);
+        
+        // Reset state
+        selectedVin = '';
+        selectedOption = null;
+        selectedPackage = null;
+        
+        // Enable inputs
+        if (vinInput) vinInput.disabled = false;
+        if (userEmailInput) userEmailInput.disabled = false;
+        if (step1ContinueBtn) step1ContinueBtn.disabled = false;
+        
+        // Focus on VIN input
+        if (vinInput) setTimeout(() => vinInput.focus(), 300);
+    }
+    
     // --- Event Listeners Setup ---
     if (step1ContinueBtn) step1ContinueBtn.addEventListener('click', handleStep1Submit);
     if (vinInput) vinInput.addEventListener('keypress', (e) => { if (e.key === 'Enter' && currentStep === 1 && !isProcessing) { e.preventDefault(); handleStep1Submit(); } });
     optionButtons.forEach(button => button.addEventListener('click', () => { if (currentStep === 2 && !isProcessing && !button.disabled) { handleStep2OptionSelect(button.dataset.option); } }));
     if (getPreviousReportBtn) getPreviousReportBtn.addEventListener('click', handleRetrieveReport);
     if (retrieveEmailInput) retrieveEmailInput.addEventListener('keypress', (e) => { if (e.key === 'Enter' && currentStep === 3 && selectedOption === 'retrieve' && !isProcessing) { e.preventDefault(); handleRetrieveReport(); } });
-    if (planSelection) planSelection.addEventListener('change', () => { if (currentStep === 3 && selectedOption === 'full' && paypalButtonContainer?.hasChildNodes()) { renderPayPalButtons(); } });
+    
+    // Package selection buttons
+    if (packageButtons) {
+        packageButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                if (!isProcessing) {
+                    handlePackageSelection(button.dataset.package);
+                }
+            });
+        });
+    }
+    
+    // Proceed to payment button
+    if (proceedPaymentBtn) {
+        proceedPaymentBtn.addEventListener('click', renderPayPalButtons);
+    }
+    
+    // Change VIN buttons
+    if (changeVinBtn) changeVinBtn.addEventListener('click', handleChangeVin);
+    if (changeVinBtnPayment) changeVinBtnPayment.addEventListener('click', handleChangeVin);
+    if (changeVinBtnRetrieve) changeVinBtnRetrieve.addEventListener('click', handleChangeVin);
+    
     restartButtons.forEach(button => button.addEventListener('click', resetWidget));
     backToStep2Buttons.forEach(button => button.addEventListener('click', () => returnToStep(2)));
 

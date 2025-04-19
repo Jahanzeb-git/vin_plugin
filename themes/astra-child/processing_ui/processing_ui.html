@@ -13,7 +13,11 @@
                     <div class="vp-form-group">
                         <label for="vin-input">Vehicle Identification Number (VIN)</label>
                         <input type="text" id="vin-input" class="vp-input" placeholder="Enter 17-digit VIN" maxlength="17" aria-required="true" aria-label="Vehicle Identification Number Input">
-                        </div>
+                    </div>
+                    <div class="vp-form-group">
+                        <label for="user-email-input">Email Address <span class="optional-label">(Optional for report retrieval)</span></label>
+                        <input type="email" id="user-email-input" class="vp-input" placeholder="Enter your email address" aria-label="Email Address Input">
+                    </div>
                     <div role="alert" class="vp-error-message" id="vp-step-1-error" aria-hidden="true"></div>
                     <button id="vp-step-1-continue" class="vp-button">Continue</button>
                 </div>
@@ -26,6 +30,12 @@
                 </div>
                 <div class="vp-step-content">
                     <p>Select the type of information you need for the entered VIN.</p>
+                    <div class="vp-vin-summary">
+                        <span class="vp-vin-display"><strong>VIN:</strong> <span id="vp-vin-display-value">--</span></span>
+                        <button id="vp-change-vin-btn" class="vp-button vp-button-secondary vp-button-small">
+                            <i class="fas fa-edit"></i> Change VIN
+                        </button>
+                    </div>
                     <fieldset class="vp-options-container" aria-labelledby="vp-step-2-title">
                          <legend class="screen-reader-text" id="vp-step-2-title">Service Options</legend>
                         <button class="vp-option-button" data-option="basic" aria-pressed="false">
@@ -68,30 +78,128 @@
 
                     <div class="step-3-content full-report-payment" id="vp-step-3-full-payment" style="display: none;">
                         <h5>Purchase Full History Report</h5>
-                        <p>Select your desired report package below and proceed to secure payment.</p>
-                        <div class="vp-form-group">
-                            <label for="plan-selection">Select Package:</label>
-                            <select id="plan-selection" class="vp-input" aria-label="Select Report Package">
-                                <option value="silver" data-price="34.99">Silver Report ($34.99)</option>
-                                <option value="gold" data-price="49.99">Gold Report ($49.99)</option>
-                                <option value="platinum" data-price="64.99">Platinum Report ($64.99)</option>
-                            </select>
+                        <div class="vp-vin-summary">
+                            <span class="vp-vin-display"><strong>VIN:</strong> <span id="vp-vin-display-value-payment">--</span></span>
+                            <button id="vp-change-vin-btn-payment" class="vp-button vp-button-secondary vp-button-small">
+                                <i class="fas fa-edit"></i> Try Another VIN
+                            </button>
                         </div>
-                        <p>You will be redirected to PayPal for secure payment.</p>
-                         <div role="alert" class="vp-error-message" id="vp-step-3-payment-error" aria-hidden="true"></div>
-                        <button id="vp-proceed-payment" class="vp-button">Proceed to Payment</button>
-                         <button class="vp-button vp-button-secondary" id="vp-back-step2-payment">Back to Options</button> </div>
+                        <p>Select your desired report package below and proceed to secure payment.</p>
+                        
+                        <div class="vp-package-selection">
+                            <div class="vp-package-card" data-package="silver">
+                                <div class="vp-package-header">
+                                    <h4>Silver</h4>
+                                    <div class="vp-package-price">$34.99</div>
+                                </div>
+                                <div class="vp-package-body">
+                                    <div class="vp-features-container">
+                                        <ul class="vp-features-list">
+                                            <li><i class="fas fa-check"></i> Vehicle Specifications</li>
+                                            <li><i class="fas fa-check"></i> Title Information</li>
+                                            <li><i class="fas fa-check"></i> Accident History</li>
+                                            <li><i class="fas fa-check"></i> Odometer Readings</li>
+                                            <li><i class="fas fa-check"></i> Service Records</li>
+                                            <li><i class="fas fa-times"></i> Ownership History</li>
+                                            <li><i class="fas fa-times"></i> Market Value</li>
+                                            <li><i class="fas fa-times"></i> Recall Information</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <div class="vp-package-footer">
+                                    <button class="vp-select-package-btn" data-package="silver">Select Silver</button>
+                                </div>
+                            </div>
+                            
+                            <div class="vp-package-card" data-package="gold">
+                                <div class="vp-package-header vp-package-recommended">
+                                    <span class="vp-recommended-badge">RECOMMENDED</span>
+                                    <h4>Gold</h4>
+                                    <div class="vp-package-price">$49.99</div>
+                                </div>
+                                <div class="vp-package-body">
+                                    <div class="vp-features-container">
+                                        <ul class="vp-features-list">
+                                            <li><i class="fas fa-check"></i> Vehicle Specifications</li>
+                                            <li><i class="fas fa-check"></i> Title Information</li>
+                                            <li><i class="fas fa-check"></i> Accident History</li>
+                                            <li><i class="fas fa-check"></i> Odometer Readings</li>
+                                            <li><i class="fas fa-check"></i> Service Records</li>
+                                            <li><i class="fas fa-check"></i> Ownership History</li>
+                                            <li><i class="fas fa-check"></i> Market Value</li>
+                                            <li><i class="fas fa-times"></i> Recall Information</li>
+                                            <li><i class="fas fa-times"></i> Safety Ratings</li>
+                                            <li><i class="fas fa-times"></i> Warranty Information</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <div class="vp-package-footer">
+                                    <button class="vp-select-package-btn" data-package="gold">Select Gold</button>
+                                </div>
+                            </div>
+                            
+                            <div class="vp-package-card" data-package="platinum">
+                                <div class="vp-package-header">
+                                    <h4>Platinum</h4>
+                                    <div class="vp-package-price">$64.99</div>
+                                </div>
+                                <div class="vp-package-body">
+                                    <div class="vp-features-container">
+                                        <ul class="vp-features-list">
+                                            <li><i class="fas fa-check"></i> Vehicle Specifications</li>
+                                            <li><i class="fas fa-check"></i> Title Information</li>
+                                            <li><i class="fas fa-check"></i> Accident History</li>
+                                            <li><i class="fas fa-check"></i> Odometer Readings</li>
+                                            <li><i class="fas fa-check"></i> Service Records</li>
+                                            <li><i class="fas fa-check"></i> Ownership History</li>
+                                            <li><i class="fas fa-check"></i> Market Value</li>
+                                            <li><i class="fas fa-check"></i> Recall Information</li>
+                                            <li><i class="fas fa-check"></i> Safety Ratings</li>
+                                            <li><i class="fas fa-check"></i> Warranty Information</li>
+                                            <li><i class="fas fa-check"></i> Vehicle Photos</li>
+                                            <li><i class="fas fa-check"></i> Theft Records</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <div class="vp-package-footer">
+                                    <button class="vp-select-package-btn" data-package="platinum">Select Platinum</button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="vp-selected-package-summary" style="display: none;">
+                            <h6>Selected Package: <span id="vp-selected-package-name">None</span></h6>
+                            <p>Total: <span id="vp-selected-package-price">$0.00</span></p>
+                            <p class="vp-payment-note">You will be redirected to PayPal for secure payment.</p>
+                        </div>
+                        
+                        <div role="alert" class="vp-error-message" id="vp-step-3-payment-error" aria-hidden="true"></div>
+                        <div class="vp-payment-actions">
+                            <button id="vp-proceed-payment" class="vp-button" disabled>Proceed to Payment</button>
+                            <button class="vp-button vp-button-secondary" id="vp-back-step2-payment">Back to Options</button>
+                        </div>
+                    </div>
 
                     <div class="step-3-content retrieve-report" id="vp-step-3-retrieve" style="display: none;">
                         <h5>Retrieve Previous Report</h5>
+                        <div class="vp-vin-summary">
+                            <span class="vp-vin-display"><strong>VIN:</strong> <span id="vp-vin-display-value-retrieve">--</span></span>
+                            <button id="vp-change-vin-btn-retrieve" class="vp-button vp-button-secondary vp-button-small">
+                                <i class="fas fa-edit"></i> Try Another VIN
+                            </button>
+                        </div>
                         <p>To access your previously purchased report for this VIN, please enter the email address used during the original purchase.</p>
                         <div class="vp-form-group">
                             <label for="retrieve-email-input">Email Address</label>
                             <input type="email" id="retrieve-email-input" class="vp-input" placeholder="Enter your email" aria-required="true" aria-label="Email Address for Report Retrieval">
+                            <small class="vp-form-help">Enter the same email you used when purchasing the report.</small>
                         </div>
-                         <div role="alert" class="vp-error-message" id="vp-step-3-retrieve-error" aria-hidden="true"></div>
-                        <button id="vp-get-previous-report" class="vp-button">Verify & Get Report</button>
-                        <button class="vp-button vp-button-secondary" id="vp-back-step2-retrieve">Back to Options</button> </div>
+                        <div role="alert" class="vp-error-message" id="vp-step-3-retrieve-error" aria-hidden="true"></div>
+                        <div class="vp-retrieve-actions">
+                            <button id="vp-get-previous-report" class="vp-button">Verify & Get Report</button>
+                            <button class="vp-button vp-button-secondary" id="vp-back-step2-retrieve">Back to Options</button>
+                        </div>
+                    </div>
 
                      <div class="step-3-content final-confirmation vp-confirmation-area" id="vp-step-3-confirmation" style="display: none;">
                          <i class="fas fa-check-circle" aria-hidden="true"></i>

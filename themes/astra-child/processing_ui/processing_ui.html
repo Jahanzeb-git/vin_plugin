@@ -86,83 +86,80 @@
                         </div>
                         <p>Select your desired report package below and proceed to secure payment.</p>
                         
-                        <div class="vp-package-selection">
-                            <div class="vp-package-card" data-package="silver">
-                                <div class="vp-package-header">
-                                    <h4>Silver</h4>
-                                    <div class="vp-package-price">$34.99</div>
-                                </div>
-                                <div class="vp-package-body">
-                                    <div class="vp-features-container">
-                                        <ul class="vp-features-list">
-                                            <li><i class="fas fa-check"></i> Vehicle Specifications</li>
-                                            <li><i class="fas fa-check"></i> Title Information</li>
-                                            <li><i class="fas fa-check"></i> Accident History</li>
-                                            <li><i class="fas fa-check"></i> Odometer Readings</li>
-                                            <li><i class="fas fa-check"></i> Service Records</li>
-                                            <li><i class="fas fa-times"></i> Ownership History</li>
-                                            <li><i class="fas fa-times"></i> Market Value</li>
-                                            <li><i class="fas fa-times"></i> Recall Information</li>
-                                        </ul>
+                        <div class="vp-package-selector-container">
+                            <div class="vp-form-group">
+                                <label for="package-selection">Select Package:</label>
+                                <div class="vp-package-selector">
+                                    <select id="package-selection" class="vp-input" aria-label="Select Report Package">
+                                        <option value="">-- Select a Package --</option>
+                                        <option value="silver" data-price="34.99">Silver Report ($34.99)</option>
+                                        <option value="gold" data-price="49.99">Gold Report ($49.99) - Recommended</option>
+                                        <option value="platinum" data-price="64.99">Platinum Report ($64.99)</option>
+                                    </select>
+                                    <div class="vp-info-tooltip">
+                                        <i class="fas fa-info-circle"></i>
+                                        <span class="vp-tooltip-text">Hover over a package to see details</span>
                                     </div>
-                                </div>
-                                <div class="vp-package-footer">
-                                    <button class="vp-select-package-btn" data-package="silver">Select Silver</button>
                                 </div>
                             </div>
                             
-                            <div class="vp-package-card" data-package="gold">
-                                <div class="vp-package-header vp-package-recommended">
-                                    <span class="vp-recommended-badge">RECOMMENDED</span>
-                                    <h4>Gold</h4>
-                                    <div class="vp-package-price">$49.99</div>
-                                </div>
-                                <div class="vp-package-body">
-                                    <div class="vp-features-container">
+                            <!-- Package Info Popups -->
+                            <div id="vp-package-info-container" class="vp-package-info-container">
+                                <div id="silver-package-info" class="vp-package-info" data-package="silver">
+                                    <div class="vp-package-info-header">
+                                        <h4>Silver Package</h4>
+                                        <span class="vp-package-price">$34.99</span>
+                                    </div>
+                                    <div class="vp-package-info-content">
+                                        <p>Basic report with essential vehicle information.</p>
+                                        <h5>Includes:</h5>
                                         <ul class="vp-features-list">
                                             <li><i class="fas fa-check"></i> Vehicle Specifications</li>
                                             <li><i class="fas fa-check"></i> Title Information</li>
                                             <li><i class="fas fa-check"></i> Accident History</li>
                                             <li><i class="fas fa-check"></i> Odometer Readings</li>
                                             <li><i class="fas fa-check"></i> Service Records</li>
-                                            <li><i class="fas fa-check"></i> Ownership History</li>
-                                            <li><i class="fas fa-check"></i> Market Value</li>
-                                            <li><i class="fas fa-times"></i> Recall Information</li>
-                                            <li><i class="fas fa-times"></i> Safety Ratings</li>
-                                            <li><i class="fas fa-times"></i> Warranty Information</li>
                                         </ul>
                                     </div>
                                 </div>
-                                <div class="vp-package-footer">
-                                    <button class="vp-select-package-btn" data-package="gold">Select Gold</button>
-                                </div>
-                            </div>
-                            
-                            <div class="vp-package-card" data-package="platinum">
-                                <div class="vp-package-header">
-                                    <h4>Platinum</h4>
-                                    <div class="vp-package-price">$64.99</div>
-                                </div>
-                                <div class="vp-package-body">
-                                    <div class="vp-features-container">
+                                
+                                <div id="gold-package-info" class="vp-package-info" data-package="gold">
+                                    <div class="vp-package-info-header">
+                                        <span class="vp-recommended-badge">RECOMMENDED</span>
+                                        <h4>Gold Package</h4>
+                                        <span class="vp-package-price">$49.99</span>
+                                    </div>
+                                    <div class="vp-package-info-content">
+                                        <p>Comprehensive report with ownership history and market value.</p>
+                                        <h5>Includes everything in Silver, plus:</h5>
                                         <ul class="vp-features-list">
-                                            <li><i class="fas fa-check"></i> Vehicle Specifications</li>
-                                            <li><i class="fas fa-check"></i> Title Information</li>
-                                            <li><i class="fas fa-check"></i> Accident History</li>
-                                            <li><i class="fas fa-check"></i> Odometer Readings</li>
-                                            <li><i class="fas fa-check"></i> Service Records</li>
                                             <li><i class="fas fa-check"></i> Ownership History</li>
                                             <li><i class="fas fa-check"></i> Market Value</li>
+                                            <li><i class="fas fa-check"></i> Detailed Service History</li>
+                                            <li><i class="fas fa-check"></i> Vehicle Use History</li>
+                                            <li><i class="fas fa-check"></i> Title Problem Check</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                
+                                <div id="platinum-package-info" class="vp-package-info" data-package="platinum">
+                                    <div class="vp-package-info-header">
+                                        <h4>Platinum Package</h4>
+                                        <span class="vp-package-price">$64.99</span>
+                                    </div>
+                                    <div class="vp-package-info-content">
+                                        <p>Complete vehicle history with all available information.</p>
+                                        <h5>Includes everything in Gold, plus:</h5>
+                                        <ul class="vp-features-list">
                                             <li><i class="fas fa-check"></i> Recall Information</li>
                                             <li><i class="fas fa-check"></i> Safety Ratings</li>
                                             <li><i class="fas fa-check"></i> Warranty Information</li>
                                             <li><i class="fas fa-check"></i> Vehicle Photos</li>
                                             <li><i class="fas fa-check"></i> Theft Records</li>
+                                            <li><i class="fas fa-check"></i> Detailed Accident Reports</li>
+                                            <li><i class="fas fa-check"></i> Structural Damage Check</li>
                                         </ul>
                                     </div>
-                                </div>
-                                <div class="vp-package-footer">
-                                    <button class="vp-select-package-btn" data-package="platinum">Select Platinum</button>
                                 </div>
                             </div>
                         </div>
@@ -175,7 +172,15 @@
                         
                         <div role="alert" class="vp-error-message" id="vp-step-3-payment-error" aria-hidden="true"></div>
                         <div class="vp-payment-actions">
-                            <button id="vp-proceed-payment" class="vp-button" disabled>Proceed to Payment</button>
+                            <button id="vp-proceed-payment" class="vp-button vp-paypal-button" disabled>
+                                <span class="vp-paypal-button-text">Pay with</span>
+                                <span class="vp-paypal-logo">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="80" height="20" viewBox="0 0 101 32">
+                                        <path fill="#253B80" d="M12.237 2.4H4.437c-.542 0-1 .396-1.085.927L.012 27.476c-.063.403.246.764.66.764h5.21c.542 0 1-.396 1.086-.928l.92-5.832c.085-.531.542-.927 1.084-.927h2.476c5.208 0 8.212-2.52 9.007-7.5.358-2.18.015-3.89-.999-5.08C18.287 3.06 15.6 2.4 12.237 2.4zm.921 7.4c-.432 2.832-2.6 2.832-4.69 2.832h-1.2l.84-5.322c.05-.324.33-.563.662-.563h.55c1.426 0 2.766 0 3.463.812.414.487.54 1.21.375 2.24zm18.155-7.4h-5.209c-.332 0-.612.24-.662.563l-3.34 21.15c-.063.403.246.764.66.764h2.67c.542 0 1-.396 1.085-.928l.898-5.7c.085-.531.543-.927 1.085-.927h2.476c5.208 0 8.212-2.52 9.006-7.5.359-2.18.016-3.89-.998-5.08-1.17-1.314-3.857-1.974-7.22-1.974h-.45zm.92 7.4c-.431 2.832-2.6 2.832-4.69 2.832h-1.2l.84-5.322c.05-.324.33-.563.662-.563h.55c1.426 0 2.766 0 3.463.812.414.487.54 1.21.375 2.24zm18.156-7.4h-5.21c-.332 0-.612.24-.662.563l-3.34 21.15c-.063.403.246.764.66.764h4.935c.383 0 .71-.28.77-.657l.946-5.97c.085-.531.542-.927 1.084-.927h2.476c5.209 0 8.212-2.52 9.007-7.5.358-2.18.015-3.89-.999-5.08-1.17-1.314-3.857-1.974-7.22-1.974h-.447zm.921 7.4c-.432 2.832-2.6 2.832-4.69 2.832h-1.2l.84-5.322c.05-.324.33-.563.662-.563h.55c1.426 0 2.766 0 3.463.812.414.487.54 1.21.375 2.24zM71.186 9.8h-3.11c-.298 0-.578.15-.745.396l-4.275 6.3-1.809-6.04c-.114-.38-.465-.656-.866-.656h-3.057c-.37 0-.63.364-.512.714l3.405 9.99-3.2 4.513c-.252.356.003.85.431.85h3.103c.295 0 .573-.146.741-.389l10.27-14.83c.246-.354-.006-.848-.431-.848z"/>
+                                        <path fill="#179BD7" d="M86.8 2.4h-7.8c-.542 0-1 .396-1.085.927l-3.34 21.15c-.063.403.246.764.66.764h4.01c.383 0 .71-.28.77-.657l.946-5.97c.085-.531.542-.927 1.084-.927h2.476c5.209 0 8.212-2.52 9.007-7.5.358-2.18.015-3.89-.999-5.08C91.36 3.06 88.673 2.4 86.8 2.4h-1.49zm.921 7.4c-.432 2.832-2.6 2.832-4.69 2.832h-1.2l.84-5.322c.05-.324.33-.563.662-.563h.55c1.426 0 2.766 0 3.463.812.414.487.54 1.21.375 2.24zm18.155-7.4h-5.209c-.332 0-.612.24-.662.563l-3.34 21.15c-.063.403.246.764.66.764h2.67c.542 0 1-.396 1.085-.928l.898-5.7c.085-.531.543-.927 1.085-.927h2.476c5.208 0 8.212-2.52 9.006-7.5.359-2.18.016-3.89-.998-5.08-1.17-1.314-3.857-1.974-7.22-1.974h-.45zm.92 7.4c-.431 2.832-2.6 2.832-4.69 2.832h-1.2l.84-5.322c.05-.324.33-.563.662-.563h.55c1.426 0 2.766 0 3.463.812.414.487.54 1.21.375 2.24z"/>
+                                    </svg>
+                                </span>
+                            </button>
                             <button class="vp-button vp-button-secondary" id="vp-back-step2-payment">Back to Options</button>
                         </div>
                     </div>

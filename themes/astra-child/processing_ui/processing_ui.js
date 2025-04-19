@@ -89,8 +89,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Payment section elements
     const vinDisplayValuePayment = widget.querySelector('#vp-vin-display-value-payment');
     const changeVinBtnPayment = widget.querySelector('#vp-change-vin-btn-payment');
-    const packageCards = widget.querySelectorAll('.vp-package-card');
-    const packageButtons = widget.querySelectorAll('.vp-select-package-btn');
+    const packageSelection = widget.querySelector('#package-selection');
+    const packageInfos = widget.querySelectorAll('.vp-package-info');
     const selectedPackageSummary = widget.querySelector('.vp-selected-package-summary');
     const selectedPackageName = widget.querySelector('#vp-selected-package-name');
     const selectedPackagePrice = widget.querySelector('#vp-selected-package-price');
@@ -312,14 +312,59 @@ document.addEventListener('DOMContentLoaded', () => {
 
     /** Reset the entire widget */
     function resetWidget() {
-        selectedVin = ''; selectedOption = null; currentPaypalOrderId = null; isProcessing = false;
-        if(vinInput) vinInput.value = ''; if(retrieveEmailInput) retrieveEmailInput.value = ''; if(planSelection) planSelection.selectedIndex = 0;
-        for (let i = 1; i <= totalSteps; i++) { clearError(i); const s = widget.querySelector(`#vp-step-${i}-summary`); if(s){s.textContent='';s.style.display='none';}}
+        selectedVin = ''; 
+        selectedOption = null; 
+        selectedPackage = null;
+        selectedPlan = null;
+        currentPaypalOrderId = null; 
+        isProcessing = false;
+        
+        // Reset form inputs
+        if(vinInput) vinInput.value = ''; 
+        if(userEmailInput) userEmailInput.value = '';
+        if(retrieveEmailInput) retrieveEmailInput.value = ''; 
+        if(packageSelection) packageSelection.selectedIndex = 0;
+        
+        // Clear errors and summaries
+        for (let i = 1; i <= totalSteps; i++) { 
+            clearError(i); 
+            const s = widget.querySelector(`#vp-step-${i}-summary`); 
+            if(s){s.textContent='';s.style.display='none';}
+        }
+        
+        // Hide all step 3 content variants
         widget.querySelectorAll('.step-3-content').forEach(el => el.style.display = 'none');
-        optionButtons.forEach(btn => { btn.classList.remove('is-selected'); btn.disabled = false; btn.setAttribute('aria-pressed', 'false'); });
+        
+        // Reset option buttons
+        optionButtons.forEach(btn => { 
+            btn.classList.remove('is-selected'); 
+            btn.disabled = false; 
+            btn.setAttribute('aria-pressed', 'false'); 
+        });
+        
+        // Hide package info popups
+        if(packageInfos) {
+            packageInfos.forEach(info => {
+                info.classList.remove('active');
+            });
+        }
+        
+        // Hide selected package summary
+        if(selectedPackageSummary) {
+            selectedPackageSummary.style.display = 'none';
+        }
+        
+        // Clear PayPal button container
         if (paypalButtonContainer) paypalButtonContainer.innerHTML = '';
-        if(step1ContinueBtn) step1ContinueBtn.disabled = false; if(vinInput) vinInput.disabled = false;
+        
+        // Enable step 1 inputs
+        if(step1ContinueBtn) step1ContinueBtn.disabled = false; 
+        if(vinInput) vinInput.disabled = false;
+        if(userEmailInput) userEmailInput.disabled = false;
+        
+        // Return to step 1
         returnToStep(1);
+        
         // Don't auto-scroll on initial reset
         // widget.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
@@ -462,7 +507,13 @@ document.addEventListener('DOMContentLoaded', () => {
          }
          paypalButtonContainer.innerHTML = '<div id="paypal-spinner" style="text-align: center; padding: 20px;"><i class="fas fa-spinner fa-spin fa-2x"></i> Loading Payment Options...</div>'; // Add spinner
 
-         const plan = planSelection.value;
+         const plan = selectedPackage || (packageSelection ? packageSelection.value : null);
+         if (!plan) {
+             showError(3, 'Please select a package first.');
+             const spinner = widget.querySelector('#paypal-spinner');
+             if(spinner) spinner.innerHTML = '<p style="color: red;">Please select a package first.</p>';
+             return;
+         }
          // Price is determined server-side, but we might need it for display? Not strictly needed for SDK calls.
 
          paypal.Buttons({
@@ -504,21 +555,21 @@ document.addEventListener('DOMContentLoaded', () => {
          });
      }
 
-    /** Handle package selection */
-    function handlePackageSelection(packageType) {
+    /** Handle package selection from dropdown */
+    function handlePackageSelection(event) {
         if (isProcessing) return;
+        
+        const packageType = event.target.value;
+        if (!packageType) {
+            // No package selected
+            if (proceedPaymentBtn) proceedPaymentBtn.disabled = true;
+            if (selectedPackageSummary) selectedPackageSummary.style.display = 'none';
+            return;
+        }
         
         // Update selected package
         selectedPackage = packageType;
-        
-        // Update UI
-        packageCards.forEach(card => {
-            if (card.dataset.package === packageType) {
-                card.classList.add('selected');
-            } else {
-                card.classList.remove('selected');
-            }
-        });
+        selectedPlan = packageType; // For compatibility with existing code
         
         // Show summary
         if (selectedPackageSummary) {
@@ -536,6 +587,44 @@ document.addEventListener('DOMContentLoaded', () => {
         // Enable proceed button
         if (proceedPaymentBtn) {
             proceedPaymentBtn.disabled = false;
+        }
+        
+        // Show the corresponding package info
+        showPackageInfo(packageType);
+    }
+    
+    /** Show package info popup */
+    function showPackageInfo(packageType) {
+        // Hide all package infos first
+        packageInfos.forEach(info => {
+            info.classList.remove('active');
+        });
+        
+        // Show the selected package info
+        const targetInfo = document.getElementById(`${packageType}-package-info`);
+        if (targetInfo) {
+            targetInfo.classList.add('active');
+        }
+    }
+    
+    /** Handle package info hover */
+    function handlePackageHover() {
+        // Setup hover functionality for the package selector
+        if (packageSelection) {
+            packageSelection.addEventListener('mouseover', function() {
+                const packageType = this.value;
+                if (packageType) {
+                    showPackageInfo(packageType);
+                }
+            });
+            
+            // Also handle focus for accessibility
+            packageSelection.addEventListener('focus', function() {
+                const packageType = this.value;
+                if (packageType) {
+                    showPackageInfo(packageType);
+                }
+            });
         }
     }
     
@@ -565,15 +654,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (getPreviousReportBtn) getPreviousReportBtn.addEventListener('click', handleRetrieveReport);
     if (retrieveEmailInput) retrieveEmailInput.addEventListener('keypress', (e) => { if (e.key === 'Enter' && currentStep === 3 && selectedOption === 'retrieve' && !isProcessing) { e.preventDefault(); handleRetrieveReport(); } });
     
-    // Package selection buttons
-    if (packageButtons) {
-        packageButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                if (!isProcessing) {
-                    handlePackageSelection(button.dataset.package);
-                }
-            });
-        });
+    // Package selection dropdown
+    if (packageSelection) {
+        packageSelection.addEventListener('change', handlePackageSelection);
     }
     
     // Proceed to payment button
@@ -588,6 +671,9 @@ document.addEventListener('DOMContentLoaded', () => {
     
     restartButtons.forEach(button => button.addEventListener('click', resetWidget));
     backToStep2Buttons.forEach(button => button.addEventListener('click', () => returnToStep(2)));
+    
+    // Initialize package hover functionality
+    handlePackageHover();
 
     // --- Initialization ---
     resetWidget(); // Initialize to step 1 state

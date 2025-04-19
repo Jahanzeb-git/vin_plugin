@@ -503,69 +503,116 @@
 }
 
 /* Package Selection Styling */
-.vp-package-selection {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 1.5rem;
+.vp-package-selector-container {
     margin-bottom: 2rem;
-    max-width: 100%;
-    overflow-x: auto;
-}
-
-.vp-package-card {
-    border: 2px solid var(--vp-border-color);
-    border-radius: var(--vp-border-radius);
-    overflow: hidden;
-    transition: all 0.3s ease;
-    display: flex;
-    flex-direction: column;
-    background-color: #fff;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
     position: relative;
 }
 
-.vp-package-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
-    border-color: var(--vp-primary-color);
+.vp-package-selector {
+    display: flex;
+    align-items: center;
+    position: relative;
 }
 
-.vp-package-card.selected {
-    border-color: var(--vp-primary-color);
-    box-shadow: 0 0 0 2px var(--vp-primary-color);
+.vp-package-selector select {
+    flex-grow: 1;
+    padding-right: 2.5rem; /* Space for the info icon */
 }
 
-.vp-package-header {
-    padding: 1.5rem;
+.vp-info-tooltip {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--vp-primary-color);
+    font-size: 1.2rem;
+    cursor: pointer;
+    z-index: 2;
+}
+
+.vp-tooltip-text {
+    visibility: hidden;
+    width: 200px;
+    background-color: #333;
+    color: #fff;
+    text-align: center;
+    border-radius: 6px;
+    padding: 8px;
+    position: absolute;
+    z-index: 1;
+    bottom: 125%;
+    left: 50%;
+    transform: translateX(-50%);
+    opacity: 0;
+    transition: opacity 0.3s;
+    font-size: 0.8rem;
+    pointer-events: none;
+}
+
+.vp-info-tooltip:hover .vp-tooltip-text {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* Package Info Popups */
+.vp-package-info-container {
+    position: relative;
+    margin-top: 1rem;
+    min-height: 50px;
+}
+
+.vp-package-info {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background-color: white;
+    border: 1px solid var(--vp-border-color);
+    border-radius: var(--vp-border-radius);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(10px);
+    transition: all 0.3s ease;
+    z-index: 10;
+    overflow: hidden;
+}
+
+.vp-package-info.active {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.vp-package-info-header {
+    padding: 1.25rem;
     background: linear-gradient(to right, #f9fafb, #fff);
     border-bottom: 1px solid var(--vp-border-color);
-    text-align: center;
     position: relative;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
-.vp-package-header h4 {
-    margin: 0 0 0.5rem 0;
-    font-size: 1.5rem;
+.vp-package-info-header h4 {
+    margin: 0;
+    font-size: 1.3rem;
     font-weight: 600;
     color: var(--vp-secondary-color);
+    flex-grow: 1;
 }
 
 .vp-package-price {
-    font-size: 1.8rem;
+    font-size: 1.5rem;
     font-weight: 700;
     color: var(--vp-primary-color);
-}
-
-.vp-package-recommended {
-    background: linear-gradient(to right, #f0f7ff, #e6f0fd);
-    border-bottom: 1px solid rgba(0, 87, 255, 0.2);
 }
 
 .vp-recommended-badge {
     position: absolute;
     top: 0;
-    left: 50%;
-    transform: translateX(-50%) translateY(-50%);
+    left: 1.25rem;
+    transform: translateY(-50%);
     background-color: var(--vp-primary-color);
     color: white;
     font-size: 0.7rem;
@@ -574,42 +621,47 @@
     border-radius: 20px;
     letter-spacing: 0.5px;
     box-shadow: 0 2px 5px rgba(0, 87, 255, 0.3);
+    z-index: 1;
 }
 
-.vp-package-body {
-    padding: 1.5rem;
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
+.vp-package-info-content {
+    padding: 1.25rem;
 }
 
-.vp-features-container {
-    max-height: 200px;
-    overflow-y: auto;
+.vp-package-info-content p {
+    margin-top: 0;
     margin-bottom: 1rem;
-    padding-right: 0.5rem;
-    scrollbar-width: thin;
-    scrollbar-color: var(--vp-mid-gray) var(--vp-light-gray);
+    color: var(--vp-text-color);
 }
 
-.vp-features-container::-webkit-scrollbar {
-    width: 6px;
-}
-
-.vp-features-container::-webkit-scrollbar-track {
-    background: var(--vp-light-gray);
-    border-radius: 10px;
-}
-
-.vp-features-container::-webkit-scrollbar-thumb {
-    background-color: var(--vp-mid-gray);
-    border-radius: 10px;
+.vp-package-info-content h5 {
+    margin: 1.25rem 0 0.75rem 0;
+    font-size: 1rem;
+    color: var(--vp-secondary-color);
 }
 
 .vp-features-list {
     list-style: none;
     padding: 0;
     margin: 0;
+    max-height: 200px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--vp-mid-gray) var(--vp-light-gray);
+}
+
+.vp-features-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.vp-features-list::-webkit-scrollbar-track {
+    background: var(--vp-light-gray);
+    border-radius: 10px;
+}
+
+.vp-features-list::-webkit-scrollbar-thumb {
+    background-color: var(--vp-mid-gray);
+    border-radius: 10px;
 }
 
 .vp-features-list li {
@@ -638,30 +690,35 @@
     color: var(--vp-mid-gray);
 }
 
-.vp-package-footer {
-    padding: 1.5rem;
-    border-top: 1px solid var(--vp-border-color);
-    text-align: center;
+/* PayPal Button Styling */
+.vp-paypal-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    background-color: #0070ba;
+    border-color: #0070ba;
+    transition: background-color 0.2s ease;
 }
 
-.vp-select-package-btn {
-    display: inline-block;
-    background-color: #fff;
-    color: var(--vp-primary-color);
-    border: 2px solid var(--vp-primary-color);
-    border-radius: var(--vp-border-radius);
-    padding: 0.75rem 1.5rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    width: 100%;
-    font-family: inherit;
-    font-size: 0.95rem;
+.vp-paypal-button:hover {
+    background-color: #005ea6;
+    border-color: #005ea6;
 }
 
-.vp-select-package-btn:hover {
-    background-color: var(--vp-primary-color);
-    color: white;
+.vp-paypal-button-text {
+    font-weight: 500;
+}
+
+.vp-paypal-logo {
+    display: flex;
+    align-items: center;
+}
+
+.vp-paypal-button:disabled {
+    background-color: #7fb7e4;
+    border-color: #7fb7e4;
+    opacity: 0.8;
 }
 
 .vp-selected-package-summary {

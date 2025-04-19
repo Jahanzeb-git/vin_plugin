@@ -63,7 +63,7 @@ add_action('astra_footer', 'vin_verify_replace_astra_footer', 5);
  */
 function render_processing_ui_shortcode() {
   // Construct the path to the HTML file within the child theme
-  $html_file_path = get_stylesheet_directory() . '/processing_ui/processing-ui.html';
+  $html_file_path = get_stylesheet_directory() . '/processing_ui/processing_ui.html';
 
   // Check if the file exists
   if ( file_exists( $html_file_path ) ) {
@@ -90,8 +90,8 @@ function enqueue_processing_ui_assets() {
   if ( is_singular() && has_shortcode( $post->post_content, 'processing_ui' ) ) {
 
       // --- Enqueue CSS ---
-      $css_file_path = get_stylesheet_directory() . '/processing_ui/processing-ui.css';
-      $css_file_uri = get_stylesheet_directory_uri() . '/processing_ui/processing-ui.css';
+      $css_file_path = get_stylesheet_directory() . '/processing_ui/processing_ui.css';
+      $css_file_uri = get_stylesheet_directory_uri() . '/processing_ui/processing_ui.css';
       // Use file modification time for cache busting during development
       // Replace with a fixed version number for production if preferred
       $css_version = file_exists($css_file_path) ? filemtime($css_file_path) : '1.0';
@@ -104,8 +104,8 @@ function enqueue_processing_ui_assets() {
       );
 
       // --- Enqueue JS ---
-      $js_file_path = get_stylesheet_directory() . '/processing_ui/processing-ui.js';
-      $js_file_uri = get_stylesheet_directory_uri() . '/processing_ui/processing-ui.js';
+      $js_file_path = get_stylesheet_directory() . '/processing_ui/processing_ui.js';
+      $js_file_uri = get_stylesheet_directory_uri() . '/processing_ui/processing_ui.js';
       $js_version = file_exists($js_file_path) ? filemtime($js_file_path) : '1.0';
 
       wp_enqueue_script(

@@ -165,6 +165,7 @@ function my_vin_ajax_capture_paypal_order() {
 
     // --- Call PayPal API to capture the order ---
     $capture_response = my_vin_paypal_capture_order( $paypal_order_id );
+    $capture_succeeded = false; // Flag to track if capture was successful or already done
 
     if ( is_wp_error( $capture_response ) ) {
         $error_code = $capture_response->get_error_code();
@@ -175,49 +176,60 @@ function my_vin_ajax_capture_paypal_order() {
              // Proceed to check/trigger fulfillment, as payment is secured.
              // Log this occurrence.
              error_log("[VIN Plugin] Info: Capture attempt on already captured PayPal Order ID: " . $paypal_order_id);
+             $capture_succeeded = true; // Mark as succeeded for fulfillment logic
         } else {
              // For other capture errors, update DB status and inform user.
              my_vin_update_report_meta($order->report_id, ['payment_status' => 'failed']);
              wp_send_json_error( array( 'message' => __('Could not capture PayPal payment: ', 'my-vin-verifier') . $capture_response->get_error_message() ) );
+             // Exit here, don't proceed to fulfillment if capture failed
+             return;
         }
+    } else {
+        // Capture API call was successful (status 200 or 201)
+        $capture_succeeded = true;
     }
 
     // --- PAYMENT CAPTURE CONFIRMED (or was already captured) ---
-    // Proceed with fulfillment attempt (function handles idempotency)
+    if ($capture_succeeded) {
+        // Update payment status in DB first
+        // Get the actual capture ID from the response if available (useful for refunds)
+        $paypal_capture_id = null;
+        if (!is_wp_error($capture_response) && isset($capture_response['purchase_units'][0]['payments']['captures'][0]['id'])) {
+            $paypal_capture_id = $capture_response['purchase_units'][0]['payments']['captures'][0]['id'];
+        } elseif ($error_code === 'order_already_captured' && isset($capture_response->get_error_data()['details'])) {
+            // If already captured, the capture ID might be in the error data (needs verification based on actual PayPal response)
+             error_log("[VIN Plugin] Note: Order already captured. Capture ID might be in error details: " . print_r($capture_response->get_error_data(), true));
+             // Attempt to find capture ID in DB if needed, or rely on webhook having stored it?
+             // For now, use the Order ID as fallback if capture ID isn't directly available from this flow.
+             $paypal_capture_id = $order->payment_transaction_id; // Might be order ID or previous capture ID
+        } else {
+             // Fallback if capture ID not found in successful response (unlikely but possible)
+             $paypal_capture_id = $order->payment_transaction_id; // Use existing ID (might be order ID)
+        }
 
-    // Update payment status in DB first
-    // Get the actual capture ID from the response if available (useful for refunds)
-    $paypal_capture_id = null;
-    if (!is_wp_error($capture_response) && isset($capture_response['purchase_units'][0]['payments']['captures'][0]['id'])) {
-        $paypal_capture_id = $capture_response['purchase_units'][0]['payments']['captures'][0]['id'];
+        // Update DB: Mark payment as completed and store the best available transaction ID (Capture ID preferred)
+        my_vin_update_report_meta($order->report_id, [
+            'payment_status' => 'completed',
+            'payment_transaction_id' => $paypal_capture_id // Store Capture ID if available, otherwise keeps Order ID
+        ]);
+
+        // --- Trigger Fulfillment (VinAudit Calls, PDF Generation) ---
+        // Pass the updated order object or just the ID
+        $fulfillment_result = my_vin_fulfill_order( $order->report_id ); // This function MUST be idempotent
+
+        if ( is_wp_error( $fulfillment_result ) ) {
+            // Fulfillment failed AFTER payment capture! Critical error. Refund already handled inside fulfill_order.
+            // Send error message back to user.
+            wp_send_json_error( array( 'message' => $fulfillment_result->get_error_message() ) );
+        } else {
+            // Fulfillment Success! fulfillment_result contains the download URL.
+            wp_send_json_success( array(
+                'message' => __('Payment successful, report generated.', 'my-vin-verifier'),
+                'downloadUrl' => $fulfillment_result
+            ) );
+        }
     }
-    my_vin_update_report_meta($order->report_id, [
-        'payment_status' => 'completed',
-        // Optionally store capture ID if different from order ID and needed for refunds
-        // 'payment_transaction_id' => $paypal_capture_id ?? $paypal_order_id
-    ]);
-
-
-    // Trigger Fulfillment (VinAudit Calls, PDF Generation)
-    $fulfillment_result = my_vin_fulfill_order( $order->report_id ); // This function MUST be idempotent
-
-    if ( is_wp_error( $fulfillment_result ) ) {
-        // Fulfillment failed AFTER payment capture! Critical error.
-        error_log("[VIN Plugin] CRITICAL: Fulfillment failed after payment capture for Order ID: {$order->report_id}, PayPal Order: {$paypal_order_id}. Error: " . $fulfillment_result->get_error_message());
-
-        // --- TODO: Initiate REFUND process via PayPal API ---
-        // $refund_result = my_vin_paypal_issue_refund( $paypal_capture_id ?? $paypal_order_id ); // Need capture ID ideally
-        // if (is_wp_error($refund_result)) { error_log("[VIN Plugin] CRITICAL: Refund attempt failed after fulfillment error. Capture ID: " . ($paypal_capture_id ?? 'N/A')); }
-        // else { my_vin_update_report_meta($order->report_id, ['payment_status' => 'refunded', 'report_status' => 'fulfillment_failed']); }
-
-        wp_send_json_error( array( 'message' => __('Payment captured, but report generation failed: ', 'my-vin-verifier') . $fulfillment_result->get_error_message() . __(' Please contact support.', 'my-vin-verifier') ) );
-    } else {
-        // Fulfillment Success! fulfillment_result contains the download URL.
-        wp_send_json_success( array(
-            'message' => __('Payment successful, report generated.', 'my-vin-verifier'),
-            'downloadUrl' => $fulfillment_result
-        ) );
-    }
+    // If capture didn't succeed (and wasn't already captured), the function would have exited earlier.
 }
 
 
@@ -260,9 +272,10 @@ function my_vin_ajax_retrieve_report() {
 /**
  * Fulfills an order after successful payment capture confirmation (either via AJAX or Webhook).
  * Calls VinAudit APIs, generates PDF, updates DB. Designed to be IDEMPOTENT.
+ * Includes refund logic on critical failure after payment.
  *
  * @param int $internal_order_id The ID from the wp_vin_reports table.
- * @return string|WP_Error Download URL on success, WP_Error on failure.
+ * @return string|WP_Error Download URL on success, WP_Error containing user-friendly message on failure.
  */
 function my_vin_fulfill_order( $internal_order_id ) {
     global $wpdb;
@@ -289,15 +302,21 @@ function my_vin_fulfill_order( $internal_order_id ) {
              // Allow proceeding to regenerate below.
         }
     }
-    // Prevent re-processing if already failed permanently, unless manual reset occurs.
-    if ( $order->report_status === 'failed' ) { // Use 'failed', not 'fulfillment_failed' if possible
-         return new WP_Error('fulfillment_already_failed', __('Report generation previously failed for this order.', 'my-vin-verifier'));
+    // Prevent re-processing if already failed permanently or refunded.
+    if ( in_array($order->report_status, ['failed', 'refunded'] ) ) {
+         return new WP_Error('fulfillment_already_failed_or_refunded', __('Report generation previously failed or was refunded for this order.', 'my-vin-verifier'));
     }
     // Prevent processing if payment wasn't completed (e.g., webhook failed before capture completed)
     if ( $order->payment_status !== 'completed' ) {
          error_log("[VIN Plugin] Fulfillment Error: Attempted to fulfill order {$internal_order_id} but payment status is {$order->payment_status}.");
          return new WP_Error('payment_not_completed', __('Payment not completed for this order.', 'my-vin-verifier'));
     }
+     // Prevent processing if already marked as processing by another request
+     if ( $order->report_status === 'processing' ) {
+         // Check timestamp? If processing for too long, maybe reset? For now, just prevent re-entry.
+         error_log("[VIN Plugin] Fulfillment Info: Order {$internal_order_id} is already being processed. Skipping duplicate attempt.");
+         return new WP_Error('fulfillment_in_progress', __('Report generation is already in progress for this order.', 'my-vin-verifier'));
+     }
 
      // Mark as processing to prevent race conditions (e.g., AJAX + Webhook hitting simultaneously)
      $updated = my_vin_update_report_meta($internal_order_id, ['report_status' => 'processing']);
@@ -306,13 +325,14 @@ function my_vin_fulfill_order( $internal_order_id ) {
          return new WP_Error('db_update_failed', __('Could not lock order for processing.', 'my-vin-verifier'));
      }
 
-
-    // 2. Gather required API data based on plan
+    // --- Start Fulfillment Process ---
     $vin = $order->vin;
     $plan = $order->plan_type;
     $combined_api_data = ['vin' => $vin, 'generation_date' => $order->purchase_timestamp];
     $vehicle_type = 'car'; // Default type
+    $fulfillment_error = null; // Variable to hold any WP_Error encountered
 
+    // 2. Gather required API data based on plan
     // Call Specs API
     $specs_response = my_vin_get_specifications( $vin );
     if ( ! is_wp_error( $specs_response ) && isset( $specs_response['attributes'] ) ) {
@@ -321,39 +341,59 @@ function my_vin_fulfill_order( $internal_order_id ) {
         $vehicle_type = isset($specs_response['attributes']['type']) ? strtolower($specs_response['attributes']['type']) : 'car';
     } else {
          error_log("[VIN Plugin] Fulfillment Warning: Specs API failed for order {$internal_order_id}, VIN {$vin}. Proceeding without full specs.");
-         // Decide if this is a fatal error or if we can proceed without specs
+         // Consider if this is fatal. For now, we proceed but log it.
+         // If specs API is critical, set $fulfillment_error here:
+         // $fulfillment_error = new WP_Error('specs_api_failed', __('Failed to retrieve essential vehicle specifications.', 'my-vin-verifier'), $specs_response);
     }
 
-    // Call History API
-    $history_response = my_vin_get_history_report( $vin, $internal_order_id ); // Pass internal ID
-     if ( is_wp_error( $history_response ) ) {
-         my_vin_update_report_meta($internal_order_id, ['report_status' => 'failed']);
-         return new WP_Error('history_api_failed', __('Failed to retrieve vehicle history data: ', 'my-vin-verifier') . $history_response->get_error_message());
-     }
-     $combined_api_data['history'] = $history_response; // Pass the whole history part
+    // Call History API (Only proceed if no critical error yet)
+    if (!$fulfillment_error) {
+        $history_response = my_vin_get_history_report( $vin, $internal_order_id ); // Pass internal ID
+        if ( is_wp_error( $history_response ) ) {
+            $fulfillment_error = new WP_Error('history_api_failed', __('Failed to retrieve vehicle history data: ', 'my-vin-verifier') . $history_response->get_error_message(), $history_response);
+        } else {
+            $combined_api_data['history'] = $history_response; // Pass the whole history part
+        }
+    }
 
-
-     // Call Market Value API
-     $value_response = my_vin_get_market_value( $vin );
-      if ( ! is_wp_error( $value_response ) && isset( $value_response['prices'] ) ) {
-          $combined_api_data['value'] = $value_response['prices'];
-      } else {
-          error_log("[VIN Plugin] Fulfillment Warning: Market Value API failed for order {$internal_order_id}, VIN {$vin}. Proceeding without value.");
-      }
-
-    // Call Image API (if plan includes images)
-    $allowed_features = my_vin_get_plan_features($plan, $vehicle_type);
-    $needs_images = (in_array('images', $allowed_features)); // Simplified check using internal key 'images'
-
-     if ($needs_images) {
-         $image_response = my_vin_get_images( $vin );
-         if ( ! is_wp_error( $image_response ) && !empty( $image_response['images'] ) ) {
-             $combined_api_data['images'] = $image_response['images']; // Use processed array from api function
+     // Call Market Value API (Only proceed if no critical error yet)
+     if (!$fulfillment_error) {
+         $value_response = my_vin_get_market_value( $vin );
+         if ( ! is_wp_error( $value_response ) && isset( $value_response['prices'] ) ) {
+             $combined_api_data['value'] = $value_response['prices'];
          } else {
-             error_log("[VIN Plugin] Fulfillment Warning: Image API failed or returned no images for order {$internal_order_id}, VIN {$vin}. Proceeding without images.");
-             $combined_api_data['images'] = []; // Ensure key exists but is empty
+             error_log("[VIN Plugin] Fulfillment Warning: Market Value API failed for order {$internal_order_id}, VIN {$vin}. Proceeding without value.");
+             // Non-fatal, proceed without value data.
          }
      }
+
+    // Call Image API (if plan includes images and no critical error yet)
+    if (!$fulfillment_error) {
+        $allowed_features = my_vin_get_plan_features($plan, $vehicle_type);
+        $needs_images = (in_array('images', $allowed_features)); // Simplified check using internal key 'images'
+
+        if ($needs_images) {
+            $image_response = my_vin_get_images( $vin );
+            if ( ! is_wp_error( $image_response ) && !empty( $image_response['images'] ) ) {
+                $combined_api_data['images'] = $image_response['images']; // Use processed array from api function
+            } else {
+                error_log("[VIN Plugin] Fulfillment Warning: Image API failed or returned no images for order {$internal_order_id}, VIN {$vin}. Proceeding without images.");
+                $combined_api_data['images'] = []; // Ensure key exists but is empty
+            }
+        }
+    }
+
+
+    // --- Check if a critical API call failed ---
+    if ($fulfillment_error) {
+        error_log("[VIN Plugin] CRITICAL Fulfillment Error (API Stage) for order {$internal_order_id}: " . $fulfillment_error->get_error_message());
+        // Update DB status to failed
+        my_vin_update_report_meta($internal_order_id, ['report_status' => 'failed']);
+        // --- Trigger REFUND ---
+        my_vin_trigger_refund($order, "VinAudit API call failed: " . $fulfillment_error->get_error_message());
+        // Return the specific API error to the user
+        return $fulfillment_error;
+    }
 
 
     // 3. Filter data based on the actual plan
@@ -364,28 +404,16 @@ function my_vin_fulfill_order( $internal_order_id ) {
     $pdf_result = my_vin_generate_pdf_report( $filtered_data ); // Pass filtered data directly
 
     if ( is_wp_error( $pdf_result ) ) {
-        error_log("[VIN Plugin] CRITICAL: PDF Generation failed for order {$internal_order_id}. Error: " . $pdf_result->get_error_message());
+        error_log("[VIN Plugin] CRITICAL Fulfillment Error (PDF Stage) for order {$internal_order_id}: " . $pdf_result->get_error_message());
+        // Update DB status to failed
         my_vin_update_report_meta($internal_order_id, ['report_status' => 'failed']);
-
         // --- Trigger REFUND ---
-        // Need the PayPal Capture ID, which should be stored in payment_transaction_id after successful capture
-        $paypal_capture_id = $order->payment_transaction_id; // Assuming capture ID was stored here
-        if ($paypal_capture_id) {
-             error_log("[VIN Plugin] Attempting refund for failed fulfillment. Order ID: {$internal_order_id}, PayPal Capture ID: {$paypal_capture_id}");
-             $refund_result = my_vin_paypal_issue_refund( $paypal_capture_id, null, 'USD', 'Failed to generate report after payment.' );
-             if (is_wp_error($refund_result)) {
-                 error_log("[VIN Plugin] CRITICAL: Refund attempt failed after fulfillment error. PayPal Capture ID: {$paypal_capture_id}. Error: " . $refund_result->get_error_message());
-                 // Notify admin!
-             } else {
-                 error_log("[VIN Plugin] Refund successful for Order ID: {$internal_order_id}. PayPal Refund ID: " . ($refund_result['id'] ?? 'N/A'));
-                 my_vin_update_report_meta($internal_order_id, ['payment_status' => 'refunded']);
-             }
-        } else {
-             error_log("[VIN Plugin] CRITICAL: Cannot refund failed fulfillment for order {$internal_order_id} because PayPal Capture ID was not found in DB.");
-             // Notify admin!
-        }
+        my_vin_trigger_refund($order, "PDF Generation failed: " . $pdf_result->get_error_message());
+        // Return the PDF generation error to the user
         return new WP_Error('pdf_generation_failed', __('Failed to generate PDF report: ', 'my-vin-verifier') . $pdf_result->get_error_message());
     }
+
+    // --- Fulfillment Successful ---
 
     // 5. Update Database with file path and status
     $full_file_path = $pdf_result; // generate_pdf returns the full server path
@@ -402,22 +430,74 @@ function my_vin_fulfill_order( $internal_order_id ) {
     if ( ! $updated ) {
          error_log("[VIN Plugin] CRITICAL: Failed to update DB after PDF generation for order {$internal_order_id}. PDF saved at: {$full_file_path}");
          // PDF is generated but user might not be able to retrieve it easily. Maybe try deleting PDF? Or notify admin.
-         return new WP_Error('db_update_failed', __('Failed to update report status after PDF generation.', 'my-vin-verifier'));
+         // Don't trigger refund here as the report *was* generated.
+         return new WP_Error('db_update_failed', __('Failed to update report status after PDF generation. Please contact support.', 'my-vin-verifier'));
     }
 
     // 6. Return download URL
     $download_url = my_vin_get_report_download_url( $relative_file_path ); // Use relative path
     if (!$download_url) {
         error_log("[VIN Plugin] Error: Could not generate download URL for generated report. Order ID: {$internal_order_id}, Path: {$relative_file_path}");
-        return new WP_Error('url_generation_failed', __('Report generated, but could not create download link.', 'my-vin-verifier'));
+        // Report generated, DB updated, but URL failed. Don't refund.
+        return new WP_Error('url_generation_failed', __('Report generated, but could not create download link. Please contact support.', 'my-vin-verifier'));
     }
 
     // --- Optional: Send Email Notification ---
     // wp_mail( $order->user_email, 'Your VIN Report is Ready', 'You can download your report here: ' . $download_url );
 
     error_log("[VIN Plugin] Order {$internal_order_id} fulfilled successfully. Report: {$relative_file_path}");
-    return $download_url;
+    return $download_url; // Return the download URL string on success
 }
 
 
+/**
+ * Helper function to attempt a refund and log the result.
+ * Called internally by my_vin_fulfill_order on failure.
+ *
+ * @param object $order The order object from the database.
+ * @param string $reason The reason for the refund.
+ */
+function my_vin_trigger_refund( $order, $reason = 'Fulfillment failed' ) {
+    // Check if order object and transaction ID are valid
+    if ( ! is_object($order) || empty($order->payment_transaction_id) || empty($order->report_id) ) {
+        error_log("[VIN Plugin] Refund Trigger Error: Invalid order data provided for refund attempt.");
+        return;
+    }
+
+    // Prevent refunding if already refunded
+    if ($order->payment_status === 'refunded') {
+        error_log("[VIN Plugin] Refund Trigger Info: Order {$order->report_id} is already marked as refunded. Skipping refund attempt.");
+        return;
+    }
+
+    $paypal_capture_id = $order->payment_transaction_id; // This should be the Capture ID after successful capture
+    $internal_order_id = $order->report_id;
+
+    error_log("[VIN Plugin] Attempting refund for failed fulfillment. Order ID: {$internal_order_id}, PayPal Capture/Transaction ID: {$paypal_capture_id}, Reason: {$reason}");
+
+    // Call the refund function (assuming full refund)
+    $refund_result = my_vin_paypal_issue_refund( $paypal_capture_id, null, 'USD', $reason );
+
+    if (is_wp_error($refund_result)) {
+        $error_code = $refund_result->get_error_code();
+        // Check if it's already refunded
+        if ($error_code === 'paypal_refund_already_done') {
+             error_log("[VIN Plugin] Refund attempt failed for Order ID {$internal_order_id}: Already refunded. Updating DB status.");
+             my_vin_update_report_meta($internal_order_id, ['payment_status' => 'refunded']);
+        } else {
+             // Log critical failure to refund
+             error_log("[VIN Plugin] CRITICAL: Refund attempt failed for Order ID {$internal_order_id}. Capture ID: {$paypal_capture_id}. Error Code: {$error_code}, Message: " . $refund_result->get_error_message());
+             // --- TODO: Notify site admin urgently! ---
+        }
+    } else {
+        // Refund request accepted by PayPal (status might be PENDING or COMPLETED)
+        $refund_status = isset($refund_result['status']) ? $refund_result['status'] : 'UNKNOWN';
+        error_log("[VIN Plugin] Refund request successful for Order ID: {$internal_order_id}. PayPal Refund ID: " . ($refund_result['id'] ?? 'N/A') . ", Status: {$refund_status}");
+        // Update internal status to 'refunded' regardless of PayPal's immediate status (PENDING/COMPLETED)
+        // as the refund process has been successfully initiated.
+        my_vin_update_report_meta($internal_order_id, ['payment_status' => 'refunded']);
+    }
+}
+
 ?>
+

@@ -59,29 +59,29 @@ document.addEventListener('DOMContentLoaded', () => {
     const lineFill = widget.querySelector('#vp-line-fill'); // CORRECT
 
     // Step 1 Elements
-    const step1 = widget.querySelector('vp-step-1');
-    const vinInput = widget.querySelector('vin-input');
-    const step1ContinueBtn = widget.querySelector('vp-step-1-continue');
-    const step1Error = widget.querySelector('vp-step-1-error');
-    const step1Summary = widget.querySelector('vp-step-1-summary');
+    const step1 = widget.querySelector('#vp-step-1');
+    const vinInput = widget.querySelector('#vin-input');
+    const step1ContinueBtn = widget.querySelector('#vp-step-1-continue');
+    const step1Error = widget.querySelector('#vp-step-1-error');
+    const step1Summary = widget.querySelector('#vp-step-1-summary');
 
     // Step 2 Elements
-    const step2 = widget.querySelector('vp-step-2');
+    const step2 = widget.querySelector('#vp-step-2');
     const optionButtons = widget.querySelectorAll('.vp-option-button');
-    const step2Error = widget.querySelector('vp-step-2-error');
-    const step2Summary = widget.querySelector('vp-step-2-summary');
+    const step2Error = widget.querySelector('#vp-step-2-error');
+    const step2Summary = widget.querySelector('#vp-step-2-summary');
 
     // Step 3 Elements
-    const step3 = widget.querySelector('vp-step-3');
-    const step3Title = widget.querySelector('vp-step-3-title');
-    const step3Error = widget.querySelector('vp-step-3-error'); // General step 3 error
-    const step3Summary = widget.querySelector('vp-step-3-summary');
+    const step3 = widget.querySelector('#vp-step-3');
+    const step3Title = widget.querySelector('#vp-step-3-title');
+    const step3Error = widget.querySelector('#vp-step-3-error'); // General step 3 error
+    const step3Summary = widget.querySelector('#vp-step-3-summary');
 
     // Step 3 Content Variants
-    const step3BasicResults = widget.querySelector('vp-step-3-basic-results');
-    const step3FullPayment = widget.querySelector('vp-step-3-full-payment');
-    const step3Retrieve = widget.querySelector('vp-step-3-retrieve');
-    const step3Confirmation = widget.querySelector('vp-step-3-confirmation');
+    const step3BasicResults = widget.querySelector('#vp-step-3-basic-results');
+    const step3FullPayment = widget.querySelector('#vp-step-3-full-payment');
+    const step3Retrieve = widget.querySelector('#vp-step-3-retrieve');
+    const step3Confirmation = widget.querySelector('#vp-step-3-confirmation');
     // Ensure the PayPal button container exists in the HTML for Step 3 Full Payment variant
     const paypalButtonContainer = widget.querySelector('#paypal-button-container') || (() => {
         // Create if missing (though it should be in the HTML)
@@ -93,10 +93,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // Step 3 Action Elements
-    const planSelection = widget.querySelector('plan-selection');
-    const retrieveEmailInput = widget.querySelector('retrieve-email-input');
-    const getPreviousReportBtn = widget.querySelector('vp-get-previous-report');
-    const downloadReportLink = widget.querySelector('download-report-link');
+    const planSelection = widget.querySelector('#plan-selection');
+    const retrieveEmailInput = widget.querySelector('#retrieve-email-input');
+    const getPreviousReportBtn = widget.querySelector('#vp-get-previous-report');
+    const downloadReportLink = widget.querySelector('#download-report-link');
     const restartButtons = Array.from(widget.querySelectorAll('#vp-restart-basic, #vp-restart-final'));
     const backToStep2Buttons = widget.querySelectorAll('#vp-back-step2-payment, #vp-back-step2-retrieve');
 

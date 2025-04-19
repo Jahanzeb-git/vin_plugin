@@ -22,14 +22,15 @@ function my_vin_get_setting( $key, $default = '' ) {
         MY_VIN_PAYPAL_MODE_OPTION => 'sandbox',
         MY_VIN_PAYPAL_SANDBOX_CLIENT_ID_OPTION => '',
         MY_VIN_PAYPAL_SANDBOX_SECRET_OPTION => '',
-        MY_VIN_PAYPAL_SANDBOX_WEBHOOK_ID_OPTION => '',
+        MY_VIN_PAYPAL_WEBHOOK_ID_SANDBOX_OPTION => '', // Use defined constant
         MY_VIN_PAYPAL_LIVE_CLIENT_ID_OPTION => '',
         MY_VIN_PAYPAL_LIVE_SECRET_OPTION => '',
-        MY_VIN_PAYPAL_LIVE_WEBHOOK_ID_OPTION => '',
+        MY_VIN_PAYPAL_WEBHOOK_ID_LIVE_OPTION => '', // Use defined constant
     );
-    $options = get_option( 'my_vin_verifier_settings', $defaults );
+    // Ensure options are retrieved correctly
+    $options_saved = get_option( 'my_vin_verifier_settings', array() );
     // Merge defaults with saved options to ensure all keys exist
-    $options = wp_parse_args( $options, $defaults );
+    $options = wp_parse_args( $options_saved, $defaults );
 
     return isset( $options[$key] ) ? $options[$key] : $default;
 }
@@ -46,90 +47,85 @@ function my_vin_get_paypal_credentials() {
         'secret'    => '',
         'mode'      => $mode,
         'base_url'  => ($mode === 'live') ? 'https://api-m.paypal.com' : 'https://api-m.sandbox.paypal.com',
-        'webhook_id'=> '',
+        'webhook_id' => '',
     );
 
     if ( $mode === 'live' ) {
         $credentials['client_id'] = my_vin_get_setting( MY_VIN_PAYPAL_LIVE_CLIENT_ID_OPTION );
         $credentials['secret']    = my_vin_get_setting( MY_VIN_PAYPAL_LIVE_SECRET_OPTION );
-        $credentials['webhook_id']= my_vin_get_setting( MY_VIN_PAYPAL_LIVE_WEBHOOK_ID_OPTION );
+        $credentials['webhook_id'] = my_vin_get_setting( MY_VIN_PAYPAL_WEBHOOK_ID_LIVE_OPTION );
     } else { // Sandbox mode
         $credentials['client_id'] = my_vin_get_setting( MY_VIN_PAYPAL_SANDBOX_CLIENT_ID_OPTION );
         $credentials['secret']    = my_vin_get_setting( MY_VIN_PAYPAL_SANDBOX_SECRET_OPTION );
-        $credentials['webhook_id']= my_vin_get_setting( MY_VIN_PAYPAL_WEBHOOK_ID_SANDBOX_OPTION );
+        $credentials['webhook_id'] = my_vin_get_setting( MY_VIN_PAYPAL_WEBHOOK_ID_SANDBOX_OPTION );
     }
 
     return $credentials;
 }
-
 /**
  * Get Plan Features based on Plan ID and Vehicle Type (Car/Bike).
- * Based on analysis of VIN_Verification_Service_Packages.pdf.
- * Uses internal keys for easier mapping to API data structure.
+ * Updated based on VIN_Verification_Service_Packages.pdf and VinAudit API Documentation.txt.
+ * Returns internal keys corresponding to expected API response structures.
  *
  * @param string $plan_id ('silver', 'gold', 'platinum').
- * @param string $vehicle_type ('car', 'bike').
+ * @param string $vehicle_type ('car', 'bike'). Assumed 'car' if not 'bike'.
  * @return array List of internal feature keys included in the plan.
  */
 function my_vin_get_plan_features( $plan_id, $vehicle_type = 'car' ) {
-    $type = strtolower($vehicle_type);
+    $type = ( strtolower($vehicle_type) === 'bike' ) ? 'bike' : 'car';
     $plan = strtolower($plan_id);
 
-    // Define features included in EACH plan using internal keys
-    $features_map = [
-        // --- CAR PLANS ---
-        'car' => [
-            'silver' => [
-                'specs', 'thefts', 'market_value', 'accidents', 'impounds', 'images', // Assuming 'hq_car_images' maps to 'images' for cars
-                'recalls', 'mileage', // Mileage/Accidental Info are listed but often derived, include base keys
-                'sale', 'warranties', 'options_packages' // Assuming warranties & options come from specs
-            ],
-            'gold'   => [
-                'specs', 'thefts', 'market_value', 'accidents', 'impounds', 'images',
-                'recalls', 'sale', 'warranties', 'options_packages',
-                'titles', 'salvage', 'exports' // Added for Gold (Mileage/Accidental Info removed per PDF)
-            ],
-            'platinum' => [
-                'specs', 'thefts', 'market_value', 'accidents', 'impounds', 'images',
-                'recalls', 'sale', 'warranties', 'options_packages',
-                'titles', 'salvage', 'exports', 'checks' // Added 'checks' for Title Brand (Mileage/Accidental Info removed per PDF)
-            ]
-        ],
-        // --- BIKE PLANS ---
-        'bike' => [
-             'silver' => [
-                'specs', 'thefts', 'market_value', 'accidents', 'impounds', 'images', // Assuming 'hq_bike_images' maps to 'images' for bikes
-                'recalls', 'mileage', 'accidental_information', // Keeping accidental info for bike silver per PDF
-                'sale', 'warranties', 'options_packages'
-            ],
-            'gold'   => [
-                'specs', 'thefts', 'market_value', 'accidents', 'impounds', 'images',
-                'recalls', 'sale', 'warranties', 'options_packages',
-                'titles', 'salvage', 'exports' // Added for Gold (Mileage/Accidental Info removed per PDF)
-            ],
-            'platinum' => [
-                'specs', 'thefts', 'market_value', 'accidents', 'impounds', 'images', // Platinum Bike uses HQ *Car* Images per PDF, still map to 'images'
-                'recalls', 'sale', 'warranties', 'options_packages',
-                'titles', 'salvage', 'exports', 'checks' // Added 'checks' for Title Brand (Mileage/Accidental Info removed per PDF)
-            ]
-        ]
+    // --- Define Base Features Included in All Plans ---
+    // Based on PDF and common sense (Specs/Overview always needed)
+    $base_features = [
+        'specs',        // Vehicle Specifications / Overview
+        'thefts',       // Theft Record
+        'market_value', // Market Value
+        'accidents',    // Accident Record / Accidental Information
+        'sale',         // Sales Listing
+        'specs_warranties', // Active/Expired Warranties (part of Specs API response)
+        // 'impounds',    // PDF includes, but no clear key in API docs sample. Omit for now.
+        // 'recalls',     // PDF includes, but no clear key in API docs sample. Omit for now.
+        // 'options_packages' // PDF includes, likely part of 'specs', rely on 'specs' inclusion.
     ];
 
-    // Fallback logic
-    if (!isset($features_map[$type])) {
-        $type = 'car'; // Default to car if type unknown
-    }
-    if (isset($features_map[$type][$plan])) {
-        return $features_map[$type][$plan];
-    }
+    // --- Define Features Added Progressively by Plan ---
+    $added_features = [
+        'car' => [
+            'silver' => ['images'], // Silver Car includes HQ Car Images
+            'gold'   => ['images', 'titles', 'salvage', 'jsi', /*'exports'*/], // Gold adds Titles, Salvage/JSI. Exports unclear.
+            'platinum' => ['images', 'titles', 'salvage', 'jsi', /*'exports',*/ 'checks'] // Platinum adds Title Brand (checks).
+        ],
+        'bike' => [
+            'silver' => ['images'], // Silver Bike includes HQ Bike Images
+            'gold'   => ['images', 'titles', 'salvage', 'jsi', /*'exports'*/], // Gold adds Titles, Salvage/JSI. Exports unclear.
+            'platinum' => ['images', 'titles', 'salvage', 'jsi', /*'exports',*/ 'checks'] // Platinum adds Title Brand (checks). PDF says Plat bike uses Car images, but map to 'images' anyway.
+        ]
+        // Note: 'Mileage' and 'Accidental Information' are listed only for Silver in PDF, but Gold/Platinum include 'titles' and 'accidents' which contain this info.
+        // We will rely on the inclusion of 'titles' and 'accidents' for Gold/Platinum rather than adding specific 'mileage' keys.
+        // Note: 'Exports', 'Impounds', 'Open Recalls' are mentioned in PDF but lack clear keys in the provided API docs sample. They are omitted from the mapping for now.
+    ];
 
-    // Fallback to car silver if plan invalid
-    return isset($features_map['car']['silver']) ? $features_map['car']['silver'] : [];
+    // Get the specific added features for the plan, default to silver if plan invalid
+    $plan_specific_features = $added_features[$type][$plan] ?? $added_features[$type]['silver'] ?? [];
+
+    // Combine base features with plan-specific features and remove duplicates
+    $all_features = array_unique(array_merge($base_features, $plan_specific_features));
+
+    // Ensure essential keys are always present if somehow missed (shouldn't happen with base_features)
+    if (!in_array('specs', $all_features)) $all_features[] = 'specs';
+    if (!in_array('market_value', $all_features)) $all_features[] = 'market_value';
+
+
+    // error_log("Plan Features for {$type} / {$plan}: " . print_r($all_features, true)); // Debugging log
+
+    return $all_features;
 }
 
 
 /**
  * Filter combined VinAudit API data based on plan features.
+ * Uses the internal keys returned by my_vin_get_plan_features.
  *
  * @param array $api_data Associative array containing combined data keys:
  * 'vin', 'generation_date', 'specs', 'specs_warranties', 'history', 'value', 'images'.
@@ -141,81 +137,85 @@ function my_vin_filter_data_for_plan( $api_data, $plan_id, $vehicle_type = 'car'
     $allowed_feature_keys = my_vin_get_plan_features( $plan_id, $vehicle_type );
     $filtered_data = [];
 
-    // Map internal feature keys (from get_plan_features) to the structure of $api_data
-    $feature_to_data_location = [
-        'specs' => ['specs'], // Top level 'specs' array from Specs API
-        'thefts' => ['history', 'thefts'], // 'thefts' array within 'history' data
-        'titles' => ['history', 'titles'],
-        'checks' => ['history', 'checks'], // For Title Brand
-        'market_value' => ['value'], // Top level 'value' array from Market Value API
-        'accidents' => ['history', 'accidents'],
-        'accidental_information' => ['history', 'accidents'], // Map this also to accidents for Bike Silver
-        'salvage' => ['history', ['salvage', 'jsi']], // Check both 'salvage' and 'jsi' under history
-        'impounds' => [], // Placeholder - No clear mapping from provided API docs
-        'images' => ['images'], // Top level 'images' array from Image API
-        'recalls' => [], // Placeholder - No clear mapping for Open Recalls
-        'mileage' => ['history', 'titles'], // Check within title records for mileage data
-        'exports' => [], // Placeholder - No clear mapping
-        'sale' => ['history', 'sale'], // Sales listing info
-        'warranties' => ['specs_warranties'], // Top level 'specs_warranties' array from Specs API
-        'options_packages' => [], // Placeholder - Often part of detailed specs, needs specific key identification
-    ];
-
     // Always include basic info passed in
     $filtered_data['vin'] = isset($api_data['vin']) ? $api_data['vin'] : 'N/A';
     $filtered_data['plan'] = $plan_id;
     $filtered_data['generation_date'] = isset($api_data['generation_date']) ? $api_data['generation_date'] : current_time( 'mysql' );
     $filtered_data['vehicle_type'] = $vehicle_type; // Pass type to template
 
-    // Add data based on allowed features
+    // --- Define mapping from internal feature key to location in $api_data ---
+    // Structure: 'feature_key' => ['top_level_key', 'optional_nested_key']
+    $data_map = [
+        'specs'        => ['specs'],
+        'specs_warranties' => ['specs_warranties'], // Assumes warranties are passed separately now
+        'value'        => ['value', 'prices'], // Market value API has 'prices' nested under 'value'
+        'images'       => ['images'],
+        // History items are nested under 'history' key in $api_data
+        'titles'       => ['history', 'titles'],
+        'thefts'       => ['history', 'thefts'],
+        'accidents'    => ['history', 'accidents'],
+        'salvage'      => ['history', 'salvage'],
+        'jsi'          => ['history', 'jsi'], // Junk/Salvage/Insurance records
+        'sale'         => ['history', 'sale'],
+        'checks'       => ['history', 'checks'], // Title Brand Checks
+        'lien'         => ['history', 'lien'], // Lien records (not in PDF, but in API docs) - Add if needed by a plan later
+        // Keys omitted due to lack of clear mapping in provided API docs: impounds, recalls, exports
+    ];
+
+    // Iterate through allowed features and copy data
     foreach ($allowed_feature_keys as $feature_key) {
-        if (isset($feature_to_data_location[$feature_key])) {
-            $location = $feature_to_data_location[$feature_key];
+        if (isset($data_map[$feature_key])) {
+            $location = $data_map[$feature_key];
+            $top_key = $location[0];
+            $nested_key = isset($location[1]) ? $location[1] : null;
 
-            // Handle top-level keys
-            if (count($location) === 1) {
-                $key = $location[0];
-                if (isset($api_data[$key])) {
-                    $filtered_data[$key] = $api_data[$key];
-                }
-            }
-            // Handle nested keys (e.g., under 'history')
-            elseif (count($location) === 2 && $location[0] === 'history') {
-                $sub_keys = (array) $location[1]; // Ensure sub_keys is an array
-                if (!isset($filtered_data['history'])) $filtered_data['history'] = [];
-
-                foreach ($sub_keys as $sub_key) {
-                    if (isset($api_data['history'][$sub_key])) {
-                        // Merge if key already exists (e.g., salvage + jsi mapped to 'salvage')
-                        if (isset($filtered_data['history'][$sub_key]) && is_array($filtered_data['history'][$sub_key]) && is_array($api_data['history'][$sub_key])) {
-                           $filtered_data['history'][$sub_key] = array_merge($filtered_data['history'][$sub_key], $api_data['history'][$sub_key]);
-                        } else {
-                           $filtered_data['history'][$sub_key] = $api_data['history'][$sub_key];
+            // Check if the top-level data exists
+            if (isset($api_data[$top_key])) {
+                if ($nested_key) {
+                    // Handle nested data (e.g., history items, market value prices)
+                    if (isset($api_data[$top_key][$nested_key])) {
+                        // Ensure the parent array exists in filtered data
+                        if (!isset($filtered_data[$top_key])) {
+                            $filtered_data[$top_key] = [];
                         }
+                        // Add the nested data
+                        $filtered_data[$top_key][$nested_key] = $api_data[$top_key][$nested_key];
                     }
+                } else {
+                    // Handle top-level data (e.g., specs, images, specs_warranties)
+                    $filtered_data[$top_key] = $api_data[$top_key];
                 }
-                // Special handling for mileage/accidental info if needed (currently mapped to titles/accidents)
-                if ($feature_key === 'mileage' && !isset($filtered_data['history']['titles'])) {
-                    // If titles are excluded but mileage is allowed, maybe extract from elsewhere if possible? Unlikely.
-                }
-
             }
-            // Add more handlers if structure is deeper/different
         } else {
-             // Log warning only if the feature key isn't empty (handles placeholders)
-             if (!empty($feature_key)) {
-                 error_log("VIN Plugin Warning: Feature key '{$feature_key}' for plan '{$plan_id}' / type '{$vehicle_type}' has no defined data location mapping.");
-             }
+            // Log if an allowed feature key doesn't have a mapping (shouldn't happen often with current setup)
+            error_log("VIN Plugin Warning: Allowed feature key '{$feature_key}' has no data mapping defined in my_vin_filter_data_for_plan.");
         }
     }
 
-    // Ensure core sections exist in the output array for template consistency
-     $core_sections = ['specs', 'history', 'value', 'images', 'specs_warranties'];
-     foreach ($core_sections as $section) {
-         if (!isset($filtered_data[$section])) {
-             $filtered_data[$section] = [];
-         }
-     }
+    // Ensure core sections exist in the output array for template consistency, even if empty
+    $core_sections = ['specs', 'history', 'value', 'images', 'specs_warranties'];
+    foreach ($core_sections as $section) {
+        if (!isset($filtered_data[$section])) {
+            // If it's history, ensure it's an array
+            $filtered_data[$section] = ($section === 'history') ? [] : null;
+        }
+        // Ensure history sub-sections are arrays if history itself exists
+        if ($section === 'history' && is_array($filtered_data['history'])) {
+             $history_sub_keys = ['titles', 'thefts', 'accidents', 'salvage', 'jsi', 'sale', 'checks', 'lien'];
+             foreach($history_sub_keys as $h_key) {
+                 if (!isset($filtered_data['history'][$h_key])) {
+                     $filtered_data['history'][$h_key] = [];
+                 }
+             }
+        }
+        // Ensure market value 'prices' exists if value exists
+        if ($section === 'value' && isset($filtered_data['value']) && !isset($filtered_data['value']['prices'])) {
+            $filtered_data['value']['prices'] = [];
+        }
+    }
+
+
+    // error_log("Filtered Data for {$plan_id} / {$vehicle_type}: " . print_r($filtered_data, true)); // Debugging log
 
     return $filtered_data;
 }
@@ -327,3 +327,4 @@ function my_vin_get_report_download_url( $relative_file_path ) {
 
 
 ?>
+

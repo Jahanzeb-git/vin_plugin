@@ -30,44 +30,58 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!nonce) {
         console.error('VIN Processor Error: Security nonce not found. AJAX calls will fail.');
         // Optionally disable the widget or show a general error
-        widget.innerHTML = '<p style="color: red;">Initialization failed: Security token missing.</p>';
+        widget.innerHTML = `
+  <div style="margin: 10px; padding: 15px; border: 1px solid #ffcccc; background-color: #fff6f6; border-radius: 5px;">
+    <p style="color: red; font-weight: bold; margin-bottom: 10px;">
+      Initialization failed: Security token missing.
+    </p>
+    <p style="color: #0066cc; font-size: 0.9em; margin-top: 5px;">
+      <strong>Hint:</strong> Check configurations in settings page. Make sure all required fields are filled in.
+    </p>
+    <p style="color: #666; font-size: 0.85em; margin-top: 8px;">
+      If you continue having issues, please contact support.
+    </p>
+  </div>
+`;
         return;
     }
-     if (!paypalClientId && widget.querySelector('.vp-option-button[data-option="full"]')) {
-         console.warn('VIN Processor Warning: PayPal Client ID not found. Payment option will be disabled or hidden.');
-         // Optionally hide or disable the payment option button here
-     }
+     // Handle missing PayPal Client ID
+    if (!paypalClientId && widget.querySelector('.vp-option-button[data-option="full"]')) {
+        console.warn('VIN Processor Warning: PayPal Client ID not found. Payment option will be disabled.');
+        const paymentButton = widget.querySelector('.vp-option-button[data-option="full"]');
+        if (paymentButton) paymentButton.disabled = true; // Disable payment option
+    }
 
 
     // --- DOM Elements ---
     const steps = Array.from(widget.querySelectorAll('.vp-step'));
     const progressSteps = Array.from(widget.querySelectorAll('.vp-progress-step'));
-    const lineFill = widget.getElementById('vp-line-fill');
+    const lineFill = widget.querySelector('#vp-line-fill'); // CORRECT
 
     // Step 1 Elements
-    const step1 = widget.getElementById('vp-step-1');
-    const vinInput = widget.getElementById('vin-input');
-    const step1ContinueBtn = widget.getElementById('vp-step-1-continue');
-    const step1Error = widget.getElementById('vp-step-1-error');
-    const step1Summary = widget.getElementById('vp-step-1-summary');
+    const step1 = widget.querySelector('vp-step-1');
+    const vinInput = widget.querySelector('vin-input');
+    const step1ContinueBtn = widget.querySelector('vp-step-1-continue');
+    const step1Error = widget.querySelector('vp-step-1-error');
+    const step1Summary = widget.querySelector('vp-step-1-summary');
 
     // Step 2 Elements
-    const step2 = widget.getElementById('vp-step-2');
+    const step2 = widget.querySelector('vp-step-2');
     const optionButtons = widget.querySelectorAll('.vp-option-button');
-    const step2Error = widget.getElementById('vp-step-2-error');
-    const step2Summary = widget.getElementById('vp-step-2-summary');
+    const step2Error = widget.querySelector('vp-step-2-error');
+    const step2Summary = widget.querySelector('vp-step-2-summary');
 
     // Step 3 Elements
-    const step3 = widget.getElementById('vp-step-3');
-    const step3Title = widget.getElementById('vp-step-3-title');
-    const step3Error = widget.getElementById('vp-step-3-error'); // General step 3 error
-    const step3Summary = widget.getElementById('vp-step-3-summary');
+    const step3 = widget.querySelector('vp-step-3');
+    const step3Title = widget.querySelector('vp-step-3-title');
+    const step3Error = widget.querySelector('vp-step-3-error'); // General step 3 error
+    const step3Summary = widget.querySelector('vp-step-3-summary');
 
     // Step 3 Content Variants
-    const step3BasicResults = widget.getElementById('vp-step-3-basic-results');
-    const step3FullPayment = widget.getElementById('vp-step-3-full-payment');
-    const step3Retrieve = widget.getElementById('vp-step-3-retrieve');
-    const step3Confirmation = widget.getElementById('vp-step-3-confirmation');
+    const step3BasicResults = widget.querySelector('vp-step-3-basic-results');
+    const step3FullPayment = widget.querySelector('vp-step-3-full-payment');
+    const step3Retrieve = widget.querySelector('vp-step-3-retrieve');
+    const step3Confirmation = widget.querySelector('vp-step-3-confirmation');
     // Ensure the PayPal button container exists in the HTML for Step 3 Full Payment variant
     const paypalButtonContainer = widget.querySelector('#paypal-button-container') || (() => {
         // Create if missing (though it should be in the HTML)
@@ -79,11 +93,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // Step 3 Action Elements
-    const planSelection = widget.getElementById('plan-selection');
-    const retrieveEmailInput = widget.getElementById('retrieve-email-input');
-    const getPreviousReportBtn = widget.getElementById('vp-get-previous-report');
-    const downloadReportLink = widget.getElementById('download-report-link');
-    const restartButtons = widget.querySelectorAll('#vp-restart-basic, #vp-restart-final');
+    const planSelection = widget.querySelector('plan-selection');
+    const retrieveEmailInput = widget.querySelector('retrieve-email-input');
+    const getPreviousReportBtn = widget.querySelector('vp-get-previous-report');
+    const downloadReportLink = widget.querySelector('download-report-link');
+    const restartButtons = Array.from(widget.querySelectorAll('#vp-restart-basic, #vp-restart-final'));
     const backToStep2Buttons = widget.querySelectorAll('#vp-back-step2-payment, #vp-back-step2-retrieve');
 
 
@@ -460,3 +474,4 @@ document.addEventListener('DOMContentLoaded', () => {
     resetWidget(); // Initialize to step 1 state
 
 });
+

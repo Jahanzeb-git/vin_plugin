@@ -176,22 +176,41 @@ document.addEventListener('DOMContentLoaded', () => {
     /** Update progress indicator UI */
     function updateProgressIndicator(completedStepNum) {
          const isMobile = isMobileViewport();
+         const activeStepNum = completedStepNum + 1;
+         
          progressSteps.forEach(pStep => {
              const stepNum = parseInt(pStep.dataset.step, 10);
              const iconElement = pStep.querySelector('.vp-step-icon');
              const labelText = pStep.querySelector('.vp-step-label').textContent;
+             
+             // Reset all states first
              pStep.classList.remove('is-active', 'is-complete');
              iconElement.setAttribute('aria-label', `Step ${stepNum}: ${labelText} - Pending`);
 
+             // Mark completed steps
              if (stepNum <= completedStepNum) {
                  pStep.classList.add('is-complete');
-                  iconElement.setAttribute('aria-label', `Step ${stepNum}: ${labelText} - Complete`);
+                 iconElement.setAttribute('aria-label', `Step ${stepNum}: ${labelText} - Complete`);
+                 
+                 // Add checkmark icon for completed steps
+                 if (iconElement) {
+                     iconElement.innerHTML = '<i class="fas fa-check"></i>';
+                 }
+             } else {
+                 // Reset icon content for non-completed steps
+                 if (iconElement) {
+                     iconElement.innerHTML = stepNum;
+                 }
              }
-             if (stepNum === completedStepNum + 1 && stepNum <= totalSteps) {
+             
+             // Mark the active step
+             if (stepNum === activeStepNum && stepNum <= totalSteps) {
                  pStep.classList.add('is-active');
-                  iconElement.setAttribute('aria-label', `Step ${stepNum}: ${labelText} - Active`);
+                 iconElement.setAttribute('aria-label', `Step ${stepNum}: ${labelText} - Active`);
              }
          });
+         
+         // Update progress line fill
          if (lineFill) {
               const percentage = completedStepNum >= totalSteps ? 100 : ((completedStepNum) / (totalSteps - 1)) * 100;
               const cappedPercentage = Math.min(percentage, 100);
@@ -290,23 +309,64 @@ document.addEventListener('DOMContentLoaded', () => {
     /** Go back to a previous step */
     function returnToStep(targetStepNumber) {
         if (targetStepNumber < 1 || isProcessing) return;
+        
+        // Store current step for animation
+        const previousStep = currentStep;
         currentStep = targetStepNumber;
         const lastCompletedStep = targetStepNumber - 1;
+        
         // Reset state for future steps
         for (let i = targetStepNumber; i <= totalSteps; i++) {
             clearError(i);
             const stepSummary = widget.querySelector(`#vp-step-${i}-summary`);
             if (stepSummary) { stepSummary.textContent = ''; stepSummary.style.display = 'none'; }
-             const stepElement = widget.querySelector(`.vp-step[data-step="${i}"]`);
-             if(stepElement) {
-                 stepElement.classList.remove('is-complete');
-                 if (i === 1) { if(vinInput) vinInput.disabled = false; if(step1ContinueBtn) step1ContinueBtn.disabled = false; }
-                 if (i === 2) { optionButtons.forEach(btn => { btn.disabled = false; btn.classList.remove('is-selected'); btn.setAttribute('aria-pressed', 'false'); }); selectedOption = null; }
-                 if (i === 3) { widget.querySelectorAll('.step-3-content').forEach(el => el.style.display = 'none'); if (paypalButtonContainer) paypalButtonContainer.innerHTML = ''; }
-             }
+            
+            const stepElement = widget.querySelector(`.vp-step[data-step="${i}"]`);
+            if(stepElement) {
+                // Remove completed state for this step and future steps
+                stepElement.classList.remove('is-complete');
+                
+                // Reset specific step elements
+                if (i === 1) { 
+                    if(vinInput) vinInput.disabled = false; 
+                    if(step1ContinueBtn) {
+                        step1ContinueBtn.disabled = false;
+                        step1ContinueBtn.textContent = 'Continue'; // Reset button text
+                    }
+                }
+                if (i === 2) { 
+                    optionButtons.forEach(btn => { 
+                        btn.disabled = false; 
+                        btn.classList.remove('is-selected'); 
+                        btn.setAttribute('aria-pressed', 'false'); 
+                    }); 
+                    selectedOption = null; 
+                }
+                if (i === 3) { 
+                    widget.querySelectorAll('.step-3-content').forEach(el => el.style.display = 'none'); 
+                    if (paypalButtonContainer) paypalButtonContainer.innerHTML = '';
+                    
+                    // Hide any active package info
+                    if(packageInfos) {
+                        packageInfos.forEach(info => {
+                            info.classList.remove('active');
+                        });
+                    }
+                    
+                    // Reset package selection
+                    if(packageSelection) packageSelection.selectedIndex = 0;
+                    if(selectedPackageSummary) selectedPackageSummary.style.display = 'none';
+                }
+            }
         }
+        
+        // Update progress indicator to reflect the current step
         updateProgressIndicator(lastCompletedStep);
+        
+        // Show the content for the target step
         showStepContent(currentStep);
+        
+        // Smooth scroll to the target step with a slight delay for animation
         setTimeout(() => smoothScrollToStep(currentStep), 150);
     }
 
@@ -641,7 +701,10 @@ document.addEventListener('DOMContentLoaded', () => {
         // Enable inputs
         if (vinInput) vinInput.disabled = false;
         if (userEmailInput) userEmailInput.disabled = false;
-        if (step1ContinueBtn) step1ContinueBtn.disabled = false;
+        if (step1ContinueBtn) {
+            step1ContinueBtn.disabled = false;
+            step1ContinueBtn.textContent = 'Continue'; // Reset button text
+        }
         
         // Focus on VIN input
         if (vinInput) setTimeout(() => vinInput.focus(), 300);

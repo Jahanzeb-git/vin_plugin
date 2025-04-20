@@ -559,6 +559,7 @@
     position: relative;
     margin-top: 1rem;
     min-height: 50px;
+    margin-bottom: 6rem; /* Add space for buttons below */
 }
 
 .vp-package-info {
@@ -576,6 +577,8 @@
     transition: all 0.3s ease;
     z-index: 10;
     overflow: hidden;
+    max-height: 400px; /* Limit height to prevent overlap */
+    overflow-y: auto; /* Allow scrolling if content is too tall */
 }
 
 .vp-package-info.active {
@@ -753,6 +756,8 @@
     display: flex;
     gap: 1rem;
     margin-top: 1.5rem;
+    position: relative;
+    z-index: 20; /* Ensure buttons stay above package info */
 }
 
 /* Confirmation / Download Styling */
@@ -876,16 +881,15 @@
     }
     
     /* Package selection responsive */
-    .vp-package-selection {
-        grid-template-columns: 1fr;
-        gap: 1rem;
+    .vp-package-selector-container {
+        margin-bottom: 4rem; /* More space for buttons on mobile */
     }
     
-    .vp-package-card {
-        max-width: 100%;
+    .vp-package-info {
+        max-height: 300px; /* Limit height on mobile */
     }
     
-    .vp-features-container {
+    .vp-features-list {
         max-height: 150px; /* Shorter on mobile */
     }
     
